@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Niam.fun</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fafaf8;
+  --text:#1a1a1a;
+  --text-muted:#777;
+  --card-radius:16px;
+  --max-w:1200px;
+  --font-display:'Instrument Serif', Georgia, serif;
+  --font-body:'DM Sans', system-ui, sans-serif;
+  --font-hand:'Caveat', cursive;
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+/* ── HEADER ── */
+.site-header{
+  text-align:center;
+  padding:60px 20px 30px;
+  position:relative;
+}
+.logo{
+  font-family:var(--font-display);
+  font-size:clamp(3rem, 8vw, 5.5rem);
+  font-weight:400;
+  letter-spacing:-1px;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  line-height:1;
+}
+.logo .dot{
+  display:inline-block;
+  width:clamp(14px, 2.5vw, 22px);
+  height:clamp(14px, 2.5vw, 22px);
+  background:#ff6b35;
+  border-radius:50%;
+  position:relative;
+  top:-2px;
+  animation:pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+.tagline-wrap{
+  height:36px;
+  margin-top:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.tagline{
+  font-family:var(--font-body);
+  font-size:clamp(0.95rem, 2vw, 1.15rem);
+  color:var(--text-muted);
+  letter-spacing:0.5px;
+}
+.tagline .cursor{
+  display:inline-block;
+  width:2px;
+  height:1.1em;
+  background:var(--text-muted);
+  margin-left:2px;
+  vertical-align:text-bottom;
+  animation:blink .6s step-end infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── FILTERS ── */
+.controls{
+  max-width:var(--max-w);
+  margin:0 auto 28px;
+  padding:0 24px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+}
+.search-box{
+  flex:1;
+  min-width:200px;
+  max-width:360px;
+  position:relative;
+}
+.search-box input{
+  width:100%;
+  padding:10px 16px 10px 40px;
+  border:2px solid #e5e5e0;
+  border-radius:100px;
+  font-family:var(--font-body);
+  font-size:0.92rem;
+  background:#fff;
+  outline:none;
+  transition:border-color .2s;
+}
+.search-box input:focus{border-color:#bbb}
+.search-box svg{
+  position:absolute;
+  left:14px;
+  top:50%;
+  transform:translateY(-50%);
+  width:16px;
+  height:16px;
+  color:#aaa;
+}
+.filter-pills{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.pill{
+  padding:8px 18px;
+  border-radius:100px;
+  border:2px solid #e5e5e0;
+  background:#fff;
+  font-family:var(--font-body);
+  font-size:0.85rem;
+  font-weight:500;
+  cursor:pointer;
+  transition:all .2s;
+  color:var(--text);
+  user-select:none;
+}
+.pill:hover{border-color:#ccc;background:#f5f5f2}
+.pill.active{
+  background:var(--text);
+  color:#fff;
+  border-color:var(--text);
+}
+
+/* ── GRID ── */
+.grid{
+  max-width:var(--max-w);
+  margin:0 auto;
+  padding:0 24px 80px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));
+  gap:20px;
+}
+.card{
+  border-radius:var(--card-radius);
+  overflow:hidden;
+  cursor:pointer;
+  position:relative;
+  aspect-ratio:16/10;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:transform .25s cubic-bezier(.25,.46,.45,.94), box-shadow .25s;
+  will-change:transform;
+}
+.card:hover{
+  transform:translateY(-4px) scale(1.01);
+  box-shadow:0 12px 40px rgba(0,0,0,.12);
+}
+.card-title{
+  font-family:var(--font-display);
+  font-size:clamp(1.3rem, 2.5vw, 1.8rem);
+  color:#fff;
+  text-align:center;
+  z-index:2;
+  padding:16px;
+  text-shadow:0 2px 12px rgba(0,0,0,.5);
+  line-height:1.2;
+}
+.card-icon{
+  position:absolute;
+  font-size:3rem;
+  opacity:.25;
+  bottom:10px;
+  right:14px;
+  z-index:1;
+}
+.card-cat{
+  position:absolute;
+  top:12px;
+  right:14px;
+  font-size:.65rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:1.5px;
+  color:rgba(255,255,255,.7);
+  z-index:2;
+  font-family:var(--font-body);
+}
+
+/* ── FULLSCREEN OVERLAY ── */
+.overlay{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  background:#fff;
+  display:none;
+  flex-direction:column;
+}
+.overlay.open{display:flex}
+.overlay-bar{
+  height:52px;
+  display:flex;
+  align-items:center;
+  padding:0 16px;
+  border-bottom:1px solid #eee;
+  flex-shrink:0;
+  gap:12px;
+  background:#fff;
+  z-index:2;
+}
+.back-btn{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background:none;
+  border:none;
+  cursor:pointer;
+  font-family:var(--font-body);
+  font-size:.9rem;
+  font-weight:500;
+  color:var(--text);
+  padding:6px 12px;
+  border-radius:8px;
+  transition:background .15s;
+}
+.back-btn:hover{background:#f0f0ee}
+.back-btn svg{width:18px;height:18px}
+.overlay-title{
+  font-family:var(--font-display);
+  font-size:1.15rem;
+  color:var(--text);
+}
+.overlay-content{
+  flex:1;
+  position:relative;
+}
+.overlay-content iframe{
+  width:100%;
+  height:100%;
+  border:none;
+}
+.game-splash{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(6px);
+  z-index:3;
+  cursor:pointer;
+  transition:opacity .4s;
+}
+.game-splash.hidden{opacity:0;pointer-events:none}
+.game-splash h2{
+  font-family:var(--font-display);
+  font-size:clamp(2rem, 5vw, 3.5rem);
+  margin-bottom:12px;
+}
+.game-splash p{
+  font-size:1rem;
+  color:var(--text-muted);
+  margin-bottom:28px;
+}
+.play-btn{
+  padding:14px 48px;
+  border:none;
+  border-radius:100px;
+  background:var(--text);
+  color:#fff;
+  font-family:var(--font-body);
+  font-size:1rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:transform .2s, box-shadow .2s;
+}
+.play-btn:hover{transform:scale(1.05);box-shadow:0 6px 24px rgba(0,0,0,.2)}
+
+/* ── FOOTER ── */
+.site-footer{
+  text-align:center;
+  padding:40px 20px 60px;
+  color:var(--text-muted);
+  font-size:.85rem;
+}
+
+/* ── MOBILE ── */
+@media(max-width:640px){
+  .grid{grid-template-columns:1fr;padding:0 16px 60px}
+  .controls{padding:0 16px;gap:8px}
+  .search-box{max-width:100%;min-width:0}
+  .site-header{padding:40px 16px 20px}
+}
+/* hide card when filtered out */
+.card.hidden-card{display:none}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo">NIAM<span class="dot"></span>FUN</div>
+  <div class="tagline-wrap">
+    <div class="tagline"><span id="typed-text"></span><span class="cursor"></span></div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="search-box">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="search" placeholder="Search games…" autocomplete="off">
+  </div>
+  <div class="filter-pills">
+    <button class="pill active" data-cat="all">All</button>
+    <button class="pill" data-cat="Sandbox">Sandbox</button>
+    <button class="pill" data-cat="Simulation">Simulation</button>
+    <button class="pill" data-cat="Puzzle">Puzzle</button>
+    <button class="pill" data-cat="Skill">Skill</button>
+    <button class="pill" data-cat="Experimental">Experimental</button>
+    <button class="pill" data-cat="Learning">Learning</button>
+  </div>
+</div>
+
+<main class="grid" id="grid"></main>
+
+<footer class="site-footer">made with ☕ and curiosity — niam.fun</footer>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="overlay-bar">
+    <button class="back-btn" id="back-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      Back
+    </button>
+    <div class="overlay-title" id="overlay-title"></div>
+  </div>
+  <div class="overlay-content" id="overlay-content">
+    <div class="game-splash" id="game-splash">
+      <h2 id="splash-title"></h2>
+      <p id="splash-desc"></p>
+      <button class="play-btn" id="play-btn">Play</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ─── GAME DATA ─── */
+const games = [
+  {id:"fractal-painter",       name:"Fractal Painter",       cat:"Sandbox",      bg:"linear-gradient(135deg,#0d0d2b,#1a0a3e,#2d1b69)",icon:"🎨",desc:"Draw fractal art with kaleidoscope symmetry"},
+  {id:"element-forge",         name:"Element Forge",          cat:"Sandbox",      bg:"linear-gradient(135deg,#1a1a2e,#e94560,#f5a623)",icon:"⚗️",desc:"Combine elements to discover new ones"},
+  {id:"infinite-rider",        name:"Infinite Rider",         cat:"Skill",        bg:"linear-gradient(135deg,#0f0c29,#302b63,#24243e)",icon:"🏍️",desc:"Endless neon bike ride over hills"},
+  {id:"speed-surgeon",         name:"Speed Surgeon",          cat:"Skill",        bg:"linear-gradient(135deg,#a8e063,#56ab2f)",         icon:"🏥",desc:"Diagnose absurd patients under pressure"},
+  {id:"orbit-sandbox",         name:"Orbit Sandbox",          cat:"Sandbox",      bg:"linear-gradient(135deg,#0c0c1d,#1b2838,#2c3e50)",icon:"🪐",desc:"Place planets and simulate gravity"},
+  {id:"dodge-the-algorithm",   name:"Dodge The Algorithm",    cat:"Skill",        bg:"linear-gradient(135deg,#141e30,#243b55)",         icon:"🤖",desc:"Evade an AI that learns your moves"},
+  {id:"the-button",            name:"The Button",             cat:"Experimental", bg:"linear-gradient(135deg,#cb2d3e,#ef473a)",         icon:"🔴",desc:"Press it. See what happens."},
+  {id:"noise-sculptor",        name:"Noise Sculptor",         cat:"Sandbox",      bg:"linear-gradient(135deg,#2c3e50,#3498db,#2ecc71)",icon:"🏔️",desc:"Sculpt terrain with Perlin noise"},
+  {id:"ecosystem-engine",      name:"Ecosystem Engine",       cat:"Simulation",   bg:"linear-gradient(135deg,#134e5e,#71b280)",         icon:"🐇",desc:"Simulate a living food chain"},
+  {id:"scale-of-everything",   name:"Scale of Everything",    cat:"Learning",     bg:"linear-gradient(135deg,#f2f0e6,#d4a574,#8B7355)", icon:"🔬",desc:"Zoom from atoms to the universe"},
+  {id:"word-chain-duel",       name:"Word Chain Duel",        cat:"Puzzle",       bg:"linear-gradient(135deg,#2c3e50,#4ca1af)",         icon:"⛓️",desc:"Word chain battle vs AI"},
+  {id:"crowd-vs-you",          name:"Crowd vs. You",          cat:"Puzzle",       bg:"linear-gradient(135deg,#fc5c7d,#6a82fb)",         icon:"👥",desc:"Predict what the crowd thinks"},
+  {id:"neon-weaver",           name:"Neon Weaver",            cat:"Sandbox",      bg:"linear-gradient(135deg,#0a0a0a,#1a002e,#000d1a)",icon:"✨",desc:"Weave glowing elastic threads"},
+  {id:"blob-sculptor",         name:"Blob Sculptor",          cat:"Sandbox",      bg:"linear-gradient(135deg,#2d1b69,#6c3483,#9b59b6)",icon:"🫧",desc:"Push and pull a wobbly digital blob"},
+  {id:"constellation-forge",   name:"Constellation Forge",    cat:"Sandbox",      bg:"linear-gradient(135deg,#0a0a2e,#1a1a4e,#000020)",icon:"⭐",desc:"Place stars and create mythological constellations"},
+  {id:"ink-drop",              name:"Ink Drop",               cat:"Experimental", bg:"linear-gradient(135deg,#ece9e6,#ffffff)",         icon:"💧",desc:"Drop ink and watch it bloom"},
+  {id:"civilization-spark",    name:"Civilization Spark",      cat:"Learning",     bg:"linear-gradient(135deg,#ba8b02,#181818)",         icon:"🏛️",desc:"Click through the history of civilization"},
+  {id:"brain-wiring",          name:"Brain Wiring",           cat:"Simulation",   bg:"linear-gradient(135deg,#0f0f23,#1a3a4a,#0f0f23)",icon:"🧠",desc:"Fire neurons and watch signals propagate"},
+  {id:"ant-architect",         name:"Ant Architect",          cat:"Simulation",   bg:"linear-gradient(135deg,#3e2723,#6d4c41,#4e342e)",icon:"🐜",desc:"Build ant colonies with pheromone trails"},
+  {id:"lava-lamp-lab",         name:"Lava Lamp Lab",          cat:"Experimental", bg:"linear-gradient(135deg,#f12711,#f5af19)",         icon:"🫠",desc:"Customize your own lava lamp"},
+  {id:"weather-painter",       name:"Weather Painter",        cat:"Simulation",   bg:"linear-gradient(135deg,#2980b9,#6dd5fa,#ffffff)",icon:"🌦️",desc:"Paint weather systems and watch storms form"},
+  {id:"shadow-match",          name:"Shadow Match",           cat:"Puzzle",       bg:"linear-gradient(135deg,#434343,#1a1a2e)",         icon:"🔦",desc:"Recreate shadows with shapes"},
+  {id:"signal-tower",          name:"Signal Tower",           cat:"Puzzle",       bg:"linear-gradient(135deg,#11998e,#38ef7d)",         icon:"📡",desc:"Route signals through relay towers"},
+  {id:"pixel-decode",          name:"Pixel Decode",           cat:"Puzzle",       bg:"linear-gradient(135deg,#e44d26,#f16529,#fc6d26)",icon:"🖼️",desc:"Guess the image as it sharpens"},
+  {id:"number-nonsense",       name:"Number Nonsense",        cat:"Learning",     bg:"linear-gradient(135deg,#667eea,#764ba2)",         icon:"🔢",desc:"Absurd estimation challenges"},
+  {id:"lie-detector-stories",  name:"Lie Detector Stories",   cat:"Puzzle",       bg:"linear-gradient(135deg,#373b44,#4286f4)",         icon:"🤥",desc:"Spot the lie in three sentences"},
+  {id:"wikipedia-wormhole",    name:"Wikipedia Wormhole",     cat:"Learning",     bg:"linear-gradient(135deg,#f5f5f5,#d5d5d5)",         icon:"📖",desc:"Navigate Wikipedia in fewest clicks"},
+  {id:"emotion-engine",        name:"Emotion Engine",         cat:"Experimental", bg:"linear-gradient(135deg,#ee9ca7,#ffdde1)",         icon:"💭",desc:"Type your feelings, watch them animate"},
+  {id:"mirror-minds",          name:"Mirror Minds",           cat:"Experimental", bg:"linear-gradient(135deg,#2b5876,#4e4376)",         icon:"🪞",desc:"Watch two AI agents debate any topic"},
+  {id:"rhythm-tap",            name:"Rhythm Tap",             cat:"Skill",        bg:"linear-gradient(135deg,#c31432,#240b36)",         icon:"🥁",desc:"Tap to the beat with glowing orbs"},
+  {id:"knife-surgeon",         name:"Knife Surgeon",          cat:"Skill",        bg:"linear-gradient(135deg,#1d4350,#a43931)",         icon:"🔪",desc:"Trace the path with surgical precision"},
+  {id:"gravity-rider",         name:"Gravity Rider",          cat:"Skill",        bg:"linear-gradient(135deg,#0f2027,#203a43,#2c5364)",icon:"⚽",desc:"Tilt a ball through a rotating tube"},
+  {id:"chain-reaction",        name:"Chain Reaction",         cat:"Puzzle",       bg:"linear-gradient(135deg,#f7971e,#ffd200)",         icon:"💥",desc:"One click, infinite chain reactions"},
+  {id:"steady-surgeon",        name:"Steady Surgeon",         cat:"Skill",        bg:"linear-gradient(135deg,#355c7d,#6c5b7b,#c06c84)",icon:"🎯",desc:"Hold perfectly still under pressure"},
+  {id:"luck-machine",          name:"Luck Machine",           cat:"Experimental", bg:"linear-gradient(135deg,#f9d423,#ff4e50)",         icon:"🎰",desc:"Spin the reels of fate"},
+  {id:"word-avalanche",        name:"Word Avalanche",         cat:"Experimental", bg:"linear-gradient(135deg,#3a1c71,#d76d77,#ffaf7b)",icon:"📝",desc:"Grow a web of connected words"},
+  {id:"the-last-pixel",        name:"The Last Pixel",         cat:"Experimental", bg:"linear-gradient(135deg,#4b6cb7,#182848)",         icon:"🎨",desc:"You get one pixel. Choose wisely."},
+  {id:"conspiracy-board",      name:"Conspiracy Board",       cat:"Experimental", bg:"linear-gradient(135deg,#1a1a1a,#3d0000)",         icon:"📌",desc:"Connect headlines with red string"},
+  {id:"timeline-typer",        name:"Timeline Typer",         cat:"Learning",     bg:"linear-gradient(135deg,#c9d6ff,#e2e2e2)",         icon:"📅",desc:"Type any year, see what happened"},
+  {id:"bluff-master",          name:"Bluff Master",           cat:"Puzzle",       bg:"linear-gradient(135deg,#642b73,#c6426e)",         icon:"🃏",desc:"Spot the bluff among real facts"},
+];
+
+/* ─── RENDER GRID ─── */
+const grid = document.getElementById('grid');
+function renderCards(list){
+  grid.innerHTML = '';
+  list.forEach((g,i) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.cat = g.cat;
+    card.dataset.name = g.name.toLowerCase();
+    card.style.background = g.bg;
+    card.style.animationDelay = (i * 30) + 'ms';
+    card.innerHTML = `
+      <span class="card-cat">${g.cat}</span>
+      <div class="card-title">${g.name}</div>
+      <span class="card-icon">${g.icon}</span>
+    `;
+    card.addEventListener('click', () => openGame(g));
+    grid.appendChild(card);
+  });
+}
+renderCards(games);
+
+/* ─── SEARCH & FILTER ─── */
+let activeCat = 'all';
+const searchInput = document.getElementById('search');
+
+function filterGames(){
+  const q = searchInput.value.toLowerCase().trim();
+  document.querySelectorAll('.card').forEach(c => {
+    const matchCat = activeCat === 'all' || c.dataset.cat === activeCat;
+    const matchSearch = !q || c.dataset.name.includes(q);
+    c.classList.toggle('hidden-card', !(matchCat && matchSearch));
+  });
+}
+searchInput.addEventListener('input', filterGames);
+
+document.querySelectorAll('.pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeCat = btn.dataset.cat;
+    filterGames();
+  });
+});
+
+/* ─── OVERLAY ─── */
+const overlay = document.getElementById('overlay');
+const overlayTitle = document.getElementById('overlay-title');
+const overlayContent = document.getElementById('overlay-content');
+const gameSplash = document.getElementById('game-splash');
+const splashTitle = document.getElementById('splash-title');
+const splashDesc = document.getElementById('splash-desc');
+const playBtn = document.getElementById('play-btn');
+
+let currentGame = null;
+
+function openGame(g){
+  currentGame = g;
+  overlayTitle.textContent = g.name;
+  splashTitle.textContent = g.name;
+  splashDesc.textContent = g.desc;
+  gameSplash.classList.remove('hidden');
+  // Remove old iframe if any
+  const oldIframe = overlayContent.querySelector('iframe');
+  if(oldIframe) oldIframe.remove();
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+playBtn.addEventListener('click', () => {
+  gameSplash.classList.add('hidden');
+  const iframe = document.createElement('iframe');
+  iframe.src = `games/${currentGame.id}.html`;
+  // Insert before splash
+  overlayContent.insertBefore(iframe, gameSplash);
+});
+
+document.getElementById('back-btn').addEventListener('click', () => {
+  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+  const iframe = overlayContent.querySelector('iframe');
+  if(iframe) iframe.remove();
+});
+
+// ESC to close
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && overlay.classList.contains('open')){
+    document.getElementById('back-btn').click();
+  }
+});
+
+/* ─── TYPING TAGLINE ─── */
+const taglines = [
+  "Waste time brilliantly.",
+  "Productivity's worst nightmare.",
+  "Click things. Feel things.",
+  "Your boss doesn't need to know.",
+  "40 reasons to procrastinate.",
+  "No ads. No accounts. Just vibes.",
+  "Built different. Literally.",
+  "Touch grass later.",
+  "Where did the last hour go?",
+  "Boredom was never an option.",
+  "Your new favorite rabbit hole.",
+  "Dangerously fun.",
+];
+const typedEl = document.getElementById('typed-text');
+let tagIdx = 0;
+let charIdx = 0;
+let deleting = false;
+let pauseTimer = 0;
+
+function typeLoop(){
+  const current = taglines[tagIdx];
+  if(!deleting){
+    typedEl.textContent = current.slice(0, charIdx + 1);
+    charIdx++;
+    if(charIdx >= current.length){
+      pauseTimer = setTimeout(() => { deleting = true; typeLoop(); }, 2200);
+      return;
+    }
+    setTimeout(typeLoop, 55 + Math.random() * 40);
+  } else {
+    typedEl.textContent = current.slice(0, charIdx);
+    charIdx--;
+    if(charIdx < 0){
+      deleting = false;
+      charIdx = 0;
+      tagIdx = (tagIdx + 1) % taglines.length;
+      setTimeout(typeLoop, 400);
+      return;
+    }
+    setTimeout(typeLoop, 30 + Math.random() * 20);
+  }
+}
+setTimeout(typeLoop, 600);
+</script>
+</body>
+</html>
