@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Speed Surgeon</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0f14;--panel:#111820;--border:#1c2630;
+  --green:#22c55e;--red:#ef4444;--blue:#3b82f6;--yellow:#fbbf24;--pink:#ec4899;
+  --text:#e8ecf2;--dim:#5a6a7a;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+
+.game{width:100%;max-width:700px;padding:20px;position:relative}
+
+/* Header */
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.title{font-size:1.4rem;font-weight:800;display:flex;align-items:center;gap:8px}
+.title .cross{color:var(--red);font-size:1.6rem}
+.stats{display:flex;gap:14px;align-items:center}
+.stat{display:flex;flex-direction:column;align-items:center;gap:1px}
+.stat-label{font-size:.55rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim)}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:600}
+.stat-val.score{color:var(--green)}
+.lives{display:flex;gap:3px}
+.heart{font-size:1.1rem;transition:all .3s}
+.heart.lost{opacity:.15;transform:scale(0.7)}
+
+/* Timer bar */
+.timer-wrap{width:100%;height:6px;background:var(--panel);border-radius:3px;margin-bottom:20px;overflow:hidden;border:1px solid var(--border)}
+.timer-bar{height:100%;border-radius:3px;transition:width 0.1s linear,background .3s;background:var(--green)}
+.timer-bar.warn{background:var(--yellow)}
+.timer-bar.danger{background:var(--red);animation:pulse-bar .3s infinite}
+@keyframes pulse-bar{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* Level indicator */
+.level-tag{text-align:center;margin-bottom:14px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--dim)}
+.level-tag span{color:var(--blue)}
+
+/* Patient card */
+.patient-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:16px;
+  padding:28px 24px;margin-bottom:18px;position:relative;overflow:hidden;
+}
+.patient-emoji{font-size:3rem;margin-bottom:12px;display:block}
+.patient-name{font-size:.75rem;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.patient-complaint{font-size:1.15rem;font-weight:600;line-height:1.5}
+.patient-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--red),var(--pink),var(--red));
+}
+
+/* Answer options */
+.options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.opt-btn{
+  padding:14px 16px;border-radius:12px;
+  background:var(--panel);border:2px solid var(--border);
+  color:var(--text);font-family:'DM Sans',sans-serif;
+  font-size:.88rem;font-weight:600;cursor:pointer;
+  transition:all .15s;text-align:left;
+  display:flex;align-items:center;gap:10px;
+  position:relative;overflow:hidden;
+}
+.opt-btn:hover{border-color:var(--blue);background:rgba(59,130,246,.06);transform:translateY(-1px)}
+.opt-btn .key{
+  font-family:'JetBrains Mono',monospace;font-size:.65rem;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  padding:2px 7px;border-radius:4px;color:var(--dim);
+  flex-shrink:0;
+}
+.opt-btn.correct{border-color:var(--green);background:rgba(34,197,94,.1);color:var(--green)}
+.opt-btn.wrong{border-color:var(--red);background:rgba(239,68,68,.08);color:var(--red)}
+.opt-btn.disabled{pointer-events:none;opacity:.5}
+.opt-btn.highlight{border-color:var(--green);box-shadow:0 0 20px rgba(34,197,94,.2)}
+
+/* Commentary */
+.commentary{
+  text-align:center;padding:16px;border-radius:12px;
+  font-size:.92rem;font-weight:600;min-height:60px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .3s;
+}
+.commentary.good{background:rgba(34,197,94,.08);color:var(--green);border:1px solid rgba(34,197,94,.15)}
+.commentary.bad{background:rgba(239,68,68,.08);color:var(--red);border:1px solid rgba(239,68,68,.15)}
+.commentary.timeout{background:rgba(251,191,36,.08);color:var(--yellow);border:1px solid rgba(251,191,36,.15)}
+
+/* Overlays */
+.overlay{
+  position:fixed;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:20;
+  background:rgba(6,10,14,.92);backdrop-filter:blur(10px);
+  transition:opacity .3s;
+}
+.overlay.hidden{opacity:0;pointer-events:none}
+.overlay h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;margin-bottom:4px}
+.overlay .sub{color:var(--dim);font-size:.9rem;margin-bottom:24px}
+.overlay .final-score{font-size:2rem;font-weight:800;color:var(--green);margin-bottom:6px}
+.overlay .final-label{font-size:.7rem;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:20px}
+.big-btn{
+  padding:14px 44px;border-radius:100px;border:2px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.04);color:#fff;font-size:.95rem;font-weight:700;
+  cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;
+}
+.big-btn:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);transform:scale(1.04)}
+
+/* Screen flash */
+.flash{position:fixed;inset:0;pointer-events:none;z-index:15;opacity:0;transition:opacity .1s}
+
+/* Level transition */
+.level-up{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  z-index:18;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:rgba(6,10,14,.7);
+}
+.level-up.show{opacity:1}
+.level-up-text{
+  font-size:2.5rem;font-weight:800;
+  background:linear-gradient(135deg,var(--blue),var(--pink));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+
+@media(max-width:500px){
+  .options{grid-template-columns:1fr}
+  .patient-card{padding:20px 18px}
+  .game{padding:14px}
+}
+</style>
+</head>
+<body>
+
+<div class="game" id="gameArea" style="display:none">
+  <div class="header">
+    <div class="title"><span class="cross">✚</span> Speed Surgeon</div>
+    <div class="stats">
+      <div class="stat"><span class="stat-label">Score</span><span class="stat-val score" id="score">0</span></div>
+      <div class="stat"><span class="stat-label">Lives</span><div class="lives" id="lives"></div></div>
+    </div>
+  </div>
+  <div class="timer-wrap"><div class="timer-bar" id="timerBar"></div></div>
+  <div class="level-tag">Patient <span id="levelNum">1</span> of 15 &nbsp;·&nbsp; Time: <span id="timeLimit">10</span>s</div>
+  <div class="patient-card">
+    <span class="patient-emoji" id="patientEmoji">🤒</span>
+    <div class="patient-name" id="patientName">Patient Name</div>
+    <div class="patient-complaint" id="complaint">Complaint here</div>
+  </div>
+  <div class="options" id="options"></div>
+  <div class="commentary" id="commentary"></div>
+</div>
+
+<div class="overlay" id="startScreen">
+  <h1>✚ Speed Surgeon</h1>
+  <div class="sub">15 patients. 10 seconds each. Don't kill anyone.</div>
+  <button class="big-btn" id="startBtn">SCRUB IN</button>
+</div>
+
+<div class="overlay hidden" id="endScreen">
+  <h1 id="endTitle">Game Over</h1>
+  <div class="sub" id="endSub">Your medical license has been revoked.</div>
+  <div class="final-score" id="finalScore">0</div>
+  <div class="final-label">Final Score</div>
+  <button class="big-btn" id="restartBtn">TRY AGAIN</button>
+</div>
+
+<div class="flash" id="flash"></div>
+<div class="level-up" id="levelUp"><div class="level-up-text" id="levelUpText">NEXT PATIENT!</div></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  PATIENT DATABASE
+// ═══════════════════════════════════════════
+const PATIENTS = [
+  {
+    emoji:"🤧", name:"Gerald, 45", 
+    complaint:"Claims his sneeze was so powerful it \"rearranged his internal organs.\" He's holding his side dramatically.",
+    correct:"Anti-inflammatory and an X-ray to check for a cracked rib",
+    wrong:["Full organ transplant","Replace his nose with a prosthetic","Prescribe industrial-grade superglue for his organs"],
+    goodReply:"Turns out he actually cracked a rib sneezing. Happens more than you'd think!",
+    badReplies:["You just tried to transplant perfectly good organs because of a sneeze.","His nose was FINE. The organs were the problem, not the nose.","Superglue is not FDA approved for internal organ adhesion. Shockingly."]
+  },
+  {
+    emoji:"🧓", name:"Mildred, 82",
+    complaint:"Swallowed her dentures while laughing at a meme her grandson sent. She's still trying to show you the meme.",
+    correct:"Endoscopic retrieval of the dentures",
+    wrong:["Show her a funnier meme to laugh them back up","Prescribe new teeth and let the old ones pass naturally","Perform open heart surgery"],
+    goodReply:"Dentures retrieved! She rated the experience 3 stars on Yelp.",
+    badReplies:["Memes are not a valid medical intervention no matter how dank.","Those dentures will NOT pass comfortably. Trust the science.","The dentures are in her THROAT, not her HEART."]
+  },
+  {
+    emoji:"🏋️", name:"Chad, 28",
+    complaint:"Tried to deadlift his car to impress a date. His back is now shaped like a question mark.",
+    correct:"Pain management, muscle relaxants, and physical therapy referral",
+    wrong:["Tell him to lift with his legs next time and send him home","Reshape his spine with a rolling pin","Have him deadlift heavier things to build tolerance"],
+    goodReply:"MRI confirms severe muscle strain. Chad says he'll try a motorcycle next time. Great.",
+    badReplies:["He can barely walk and you're giving him a gym tip? Come on.","A ROLLING PIN? This is a hospital, not a bakery.","The solution to a broken back is NOT more deadlifts."]
+  },
+  {
+    emoji:"👶", name:"Baby Timmy, 1",
+    complaint:"Won't stop hiccuping. Has been hiccuping for 4 hours straight. Parents are losing it.",
+    correct:"Gentle feeding adjustments and monitoring — hiccups are normal in infants",
+    wrong:["Scare the baby to stop the hiccups","Prescribe espresso to shock the diaphragm","Tiny baby exorcism"],
+    goodReply:"Hiccups stopped on their own 10 minutes later. Parents are now hiccuping from stress.",
+    badReplies:["You cannot just SCARE a baby. That's not medicine, that's assault.","ESPRESSO for a ONE YEAR OLD?! Are you out of your mind?!","This is a hospital. We don't do exorcisms here. ...Usually."]
+  },
+  {
+    emoji:"🧑‍🍳", name:"Chef Pierre, 37",
+    complaint:"Accidentally seasoned his soup with ghost pepper powder instead of paprika. Mouth is on fire. Literally foaming.",
+    correct:"Milk, bread, and cool oral rinse to neutralize capsaicin",
+    wrong:["Have him eat more peppers to build immunity","Douse his mouth with a fire extinguisher","Surgically remove his taste buds"],
+    goodReply:"Two glasses of milk and he's already critiquing the hospital food. Classic Pierre.",
+    badReplies:["MORE PEPPERS?! His mouth is already a war crime!","A fire extinguisher contains CHEMICALS, not taste-bud relief.","He needs his taste buds — he's a CHEF. Think."]
+  },
+  {
+    emoji:"🤠", name:"Dusty, 55",
+    complaint:"Got kicked by a horse \"right in the dignity.\" Refuses to specify where but is walking funny.",
+    correct:"Ice, anti-inflammatories, and a careful physical examination",
+    wrong:["Tell him to kick the horse back for emotional closure","Prescribe cowboy-grade whiskey","Replace his dignity surgically"],
+    goodReply:"Nothing broken, just severely bruised. Dusty says the horse started it.",
+    badReplies:["Kicking the horse back will create MORE patients, not fewer.","Whiskey is not a painkiller. Well, not a LEGAL one.","Dignity cannot be surgically implanted. Believe me, we've tried."]
+  },
+  {
+    emoji:"🎮", name:"Dylan, 16",
+    complaint:"Has been gaming for 38 hours straight. Can't feel his hands, seeing double, and thinks he's a character in the game.",
+    correct:"Hydration, forced rest, hand stretches, and a stern talk about screen time",
+    wrong:["Let him finish the level first, THEN treat him","Amputate the affected gaming hand","Upload his consciousness to the game so he can live there"],
+    goodReply:"After sleeping for 14 hours, Dylan reported his K/D ratio was totally worth it.",
+    badReplies:["He needs rest NOW, not after one more level. That's how we lost the last patient.","We don't amputate hands for CARPAL TUNNEL.","We do not have consciousness-uploading technology. Yet."]
+  },
+  {
+    emoji:"🧘", name:"Sage, 31",
+    complaint:"Tried to achieve \"full enlightenment\" by meditating upside-down for 6 hours. Now can't feel her legs and her face is purple.",
+    correct:"Restore blood flow gradually, IV fluids, and monitor for compartment syndrome",
+    wrong:["Tell her she's almost there, just 2 more hours","Spin her like a centrifuge to redistribute blood","Declare her officially enlightened and discharge"],
+    goodReply:"Blood flow restored. Sage says she saw the meaning of life but forgot it when she passed out.",
+    badReplies:["Two more hours and she'll be enlightened AND dead.","A human is not a CENTRIFUGE.","Hospitals cannot issue enlightenment certificates. Not even the gift shop."]
+  },
+  {
+    emoji:"👨‍🔬", name:"Dr. Finkle, 50",
+    complaint:"A fellow doctor who accidentally injected himself with an experimental formula. His left arm is now bright green.",
+    correct:"Toxicology panel, IV flush, and skin biopsy of affected area",
+    wrong:["Inject the other arm to make them match","Paint the rest of his body green for consistency","Publish a research paper about it"],
+    goodReply:"Turned out to be a harmless dye compound. Arm returned to normal in 3 days. Paper was published anyway.",
+    badReplies:["Injecting MORE unknown formula is the OPPOSITE of medicine.","Painting is cosmetic, not medical. Also, WHY?!","The patient needs TREATMENT first, publication LATER."]
+  },
+  {
+    emoji:"🐍", name:"Karen, 41",
+    complaint:"Brought her \"emotional support cobra\" to brunch and it bit her. She insists the cobra is the victim here.",
+    correct:"Administer antivenom immediately and monitor for allergic reaction",
+    wrong:["Apologize to the cobra on Karen's behalf","Apply essential oils to the bite","Sue the restaurant for not accommodating the cobra"],
+    goodReply:"Antivenom worked perfectly. Karen has already filed a complaint about the hospital's cobra policy.",
+    badReplies:["The cobra does NOT need an apology. Karen needs ANTIVENOM.","Essential oils don't neutralize COBRA VENOM.","Legal action won't stop the venom from spreading!"]
+  },
+  {
+    emoji:"🧑‍🚀", name:"Buzz, 34",
+    complaint:"Convinced he's been abducted by aliens and they \"installed something\" in his ear. It's actually a bluetooth earbud he forgot about.",
+    correct:"Remove the earbud, provide reassurance, and recommend a psych evaluation",
+    wrong:["Call NASA to report the alien contact","Attempt to communicate with the 'alien device'","Surgically remove his entire ear to be safe"],
+    goodReply:"Earbud removed. It was playing a podcast about aliens the whole time. That explains a lot.",
+    badReplies:["NASA does not handle bluetooth earbud removals.","It's an EARBUD. It's playing Spotify, not alien transmissions.","You can't just remove someone's EAR because of a bluetooth device!"]
+  },
+  {
+    emoji:"💪", name:"The Boulder, 29",
+    complaint:"Professional wrestler who body-slammed himself during practice. Yes, himself. He's very flexible and very regretful.",
+    correct:"Full body scan, neck brace, and concussion protocol",
+    wrong:["Have him body-slam himself again to undo the damage","Prescribe more flexibility training","Enter him in next week's match and hope for the best"],
+    goodReply:"Mild concussion and a bruised ego. The Boulder promises to only slam others from now on.",
+    badReplies:["You can't UNDO a body slam with ANOTHER body slam. That's not how bodies work.","His flexibility is the PROBLEM, not the solution!","He just SLAMMED HIMSELF. He needs rest, not a rematch!"]
+  },
+  {
+    emoji:"👵", name:"Ethel, 88",
+    complaint:"Ate an entire tube of toothpaste because \"it said WHITENING and she wanted whiter bones.\"",
+    correct:"Activated charcoal, stomach monitoring, and poison control consultation",
+    wrong:["Give her more toothpaste — she didn't finish the job","Tell her it worked and her bones are now sparkling","Prescribe mouthwash as a chaser"],
+    goodReply:"Ethel made a full recovery and her breath has never been fresher. Silver lining.",
+    badReplies:["MORE toothpaste will make her MORE sick, not MORE white!","Her bones are NOT sparkling. Her stomach is FURIOUS.","Mouthwash is ALSO not food, Ethel!"]
+  },
+  {
+    emoji:"🎸", name:"Axel, 22",
+    complaint:"Tried to play guitar with his teeth like Hendrix and chipped 4 of them. Blood everywhere. Still thinks it was rad.",
+    correct:"Emergency dental reconstruction and tetanus shot",
+    wrong:["Tell him to switch to drums — no teeth required","Superglue the teeth back in","Replace all teeth with guitar picks for commitment"],
+    goodReply:"Teeth reconstructed. Axel posted the bloody video and it went viral. 2M views.",
+    badReplies:["Drums ALSO require a functioning face, actually.","Superglue is NOT dental cement! We've been over this!","Guitar pick teeth would be a choking hazard AND a lawsuit."]
+  },
+  {
+    emoji:"🎪", name:"Bobo the Clown, 40",
+    complaint:"Inflated a balloon animal so hard he gave himself a hernia. The balloon animal is a perfect giraffe though.",
+    correct:"Hernia assessment, pain management, and surgical repair consultation",
+    wrong:["Pop the giraffe to release the trapped hernia energy","Inflate Bobo to match the giraffe","Have him make a balloon surgeon to operate on himself"],
+    goodReply:"Surgery scheduled for Tuesday. Bobo made balloon animals for the entire nursing staff while waiting.",
+    badReplies:["Popping balloons does not cure hernias. That's clown logic.","You cannot INFLATE a human being. This isn't a cartoon!","Balloon surgeons have a 0% success rate in peer-reviewed studies."]
+  },
+];
+
+// ═══════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════
+let level=0, lives=3, scoreVal=0, timer=0, maxTime=10, timerInterval=null;
+let answered=false, gameActive=false;
+
+const gameArea=document.getElementById('gameArea');
+const startScreen=document.getElementById('startScreen');
+const endScreen=document.getElementById('endScreen');
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('restartBtn').addEventListener('click', startGame);
+
+function startGame(){
+  level=0;lives=3;scoreVal=0;answered=false;
+  startScreen.classList.add('hidden');
+  endScreen.classList.add('hidden');
+  gameArea.style.display='block';
+  updateLives();
+  updateScore();
+  loadLevel();
+}
+
+function loadLevel(){
+  if(level>=PATIENTS.length){
+    victory();return;
+  }
+  if(lives<=0){
+    gameOver();return;
+  }
+  
+  answered=false;
+  const p=PATIENTS[level];
+  
+  // Time decreases as you progress
+  maxTime=Math.max(5, 10 - Math.floor(level/3));
+  timer=maxTime;
+  
+  document.getElementById('levelNum').textContent=level+1;
+  document.getElementById('timeLimit').textContent=maxTime;
+  document.getElementById('patientEmoji').textContent=p.emoji;
+  document.getElementById('patientName').textContent=p.name;
+  document.getElementById('complaint').textContent=p.complaint;
+  
+  // Shuffle options
+  const opts=[{text:p.correct,idx:0},...p.wrong.map((w,i)=>({text:w,idx:i+1}))];
+  shuffle(opts);
+  
+  const optContainer=document.getElementById('options');
+  optContainer.innerHTML='';
+  const keys=['1','2','3','4'];
+  opts.forEach((o,i)=>{
+    const btn=document.createElement('button');
+    btn.className='opt-btn';
+    btn.innerHTML=`<span class="key">${keys[i]}</span>${o.text}`;
+    btn.dataset.idx=o.idx;
+    btn.addEventListener('click',()=>answer(o.idx, btn));
+    optContainer.appendChild(btn);
+  });
+  
+  document.getElementById('commentary').className='commentary';
+  document.getElementById('commentary').textContent='';
+  
+  // Start timer
+  clearInterval(timerInterval);
+  const startTime=Date.now();
+  timerInterval=setInterval(()=>{
+    if(answered)return;
+    const elapsed=(Date.now()-startTime)/1000;
+    timer=Math.max(0, maxTime-elapsed);
+    const pct=(timer/maxTime)*100;
+    const bar=document.getElementById('timerBar');
+    bar.style.width=pct+'%';
+    bar.className='timer-bar'+(pct<25?' danger':pct<50?' warn':'');
+    
+    if(timer<=0){
+      clearInterval(timerInterval);
+      timeOut();
+    }
+  },50);
+  
+  // Level transition
+  if(level>0){
+    const lu=document.getElementById('levelUp');
+    lu.querySelector('.level-up-text').textContent=`PATIENT ${level+1}!`;
+    lu.classList.add('show');
+    setTimeout(()=>lu.classList.remove('show'),800);
+  }
+}
+
+function answer(idx, btn){
+  if(answered)return;
+  answered=true;
+  clearInterval(timerInterval);
+  
+  const p=PATIENTS[level];
+  const allBtns=document.querySelectorAll('.opt-btn');
+  
+  if(idx===0){
+    // Correct!
+    btn.classList.add('correct');
+    const timeBonus=Math.ceil(timer*100);
+    const levelBonus=(level+1)*50;
+    scoreVal+=timeBonus+levelBonus;
+    updateScore();
+    showCommentary(p.goodReply,'good');
+    flashScreen('rgba(34,197,94,0.12)');
+    // Highlight correct
+    allBtns.forEach(b=>{if(b!==btn)b.classList.add('disabled')});
+  } else {
+    // Wrong!
+    btn.classList.add('wrong');
+    lives--;
+    updateLives();
+    showCommentary(p.badReplies[idx-1],'bad');
+    flashScreen('rgba(239,68,68,0.15)');
+    // Show correct answer
+    allBtns.forEach(b=>{
+      if(b.dataset.idx==='0')b.classList.add('highlight');
+      else if(b!==btn)b.classList.add('disabled');
+    });
+  }
+  
+  setTimeout(()=>{level++;loadLevel()}, 2500);
+}
+
+function timeOut(){
+  if(answered)return;
+  answered=true;
+  lives--;
+  updateLives();
+  showCommentary("⏰ TIME'S UP! The patient is staring at you. Awkward.",'timeout');
+  flashScreen('rgba(251,191,36,0.12)');
+  const allBtns=document.querySelectorAll('.opt-btn');
+  allBtns.forEach(b=>{
+    if(b.dataset.idx==='0')b.classList.add('highlight');
+    else b.classList.add('disabled');
+  });
+  setTimeout(()=>{level++;loadLevel()}, 2500);
+}
+
+function showCommentary(text, type){
+  const el=document.getElementById('commentary');
+  el.className='commentary '+type;
+  el.textContent=text;
+}
+
+function flashScreen(color){
+  const f=document.getElementById('flash');
+  f.style.background=color;
+  f.style.opacity='1';
+  setTimeout(()=>{f.style.opacity='0'},150);
+}
+
+function updateScore(){
+  document.getElementById('score').textContent=scoreVal;
+}
+
+function updateLives(){
+  const el=document.getElementById('lives');
+  el.innerHTML='';
+  for(let i=0;i<3;i++){
+    const h=document.createElement('span');
+    h.className='heart'+(i>=lives?' lost':'');
+    h.textContent='❤️';
+    el.appendChild(h);
+  }
+}
+
+function victory(){
+  clearInterval(timerInterval);
+  gameArea.style.display='none';
+  const el=endScreen;
+  el.classList.remove('hidden');
+  document.getElementById('endTitle').textContent='🏆 BOARD CERTIFIED!';
+  document.getElementById('endSub').textContent=lives===3?'Perfect! Zero malpractice suits!':'You saved most of them. Good enough for government work.';
+  document.getElementById('finalScore').textContent=scoreVal;
+}
+
+function gameOver(){
+  clearInterval(timerInterval);
+  gameArea.style.display='none';
+  const el=endScreen;
+  el.classList.remove('hidden');
+  document.getElementById('endTitle').textContent='💀 LICENSE REVOKED';
+  document.getElementById('endSub').textContent='Too many patients met their maker. The board is not pleased.';
+  document.getElementById('finalScore').textContent=scoreVal;
+}
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}}
+
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  if(answered||!gameActive&&state!=='play')return;
+  const btns=document.querySelectorAll('.opt-btn');
+  if(e.key==='1'&&btns[0])btns[0].click();
+  if(e.key==='2'&&btns[1])btns[1].click();
+  if(e.key==='3'&&btns[2])btns[2].click();
+  if(e.key==='4'&&btns[3])btns[3].click();
+});
+</script>
+</body>
+</html>
