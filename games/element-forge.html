@@ -4,1340 +4,537 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Element Forge</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0c0c14;
-  --panel:#111119;
-  --panel2:#16161f;
-  --border:#1f1f2e;
-  --accent:#f59e0b;
-  --accent2:#ef4444;
-  --accent3:#8b5cf6;
-  --text:#e8e6f0;
-  --text-dim:#5e5d6e;
-  --glow:rgba(245,158,11,.4);
-}
-html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);user-select:none}
+:root{--bg:#0c0c10;--panel:#15151c;--panel2:#1c1c26;--border:#262633;--border2:#35354a;--accent:#7dd3fc;--accent2:#a78bfa;--text:#e4e4ec;--dim:#5e5e72;--gold:#fbbf24;--green:#4ade80}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;user-select:none}
 .app{display:flex;height:100vh}
 
-/* SIDEBAR */
-.sidebar{
-  width:280px;min-width:280px;
-  background:var(--panel);
-  border-right:1px solid var(--border);
-  display:flex;flex-direction:column;
-  z-index:10;
-}
-.sidebar-header{
-  padding:16px 18px;
-  border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
-}
-.sidebar-header h1{
-  font-size:1rem;font-weight:700;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-}
-.counter{
-  font-family:'JetBrains Mono',monospace;
-  font-size:.72rem;color:var(--accent);
-  background:rgba(245,158,11,.1);
-  padding:4px 10px;border-radius:20px;
-  border:1px solid rgba(245,158,11,.2);
-}
-.sidebar-search{padding:10px 14px;border-bottom:1px solid var(--border)}
-.sidebar-search input{
-  width:100%;padding:8px 12px;
-  border:1px solid var(--border);border-radius:8px;
-  background:var(--bg);color:var(--text);
-  font-family:'DM Sans',sans-serif;font-size:.82rem;
-  outline:none;
-}
-.sidebar-search input:focus{border-color:var(--accent)}
-.sidebar-search input::placeholder{color:var(--text-dim)}
-.elem-list{
-  flex:1;overflow-y:auto;
-  padding:8px;
-  display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;
-}
-.elem-list::-webkit-scrollbar{width:4px}
-.elem-list::-webkit-scrollbar-thumb{background:#2a2a3a;border-radius:4px}
-
-/* Element chips */
-.elem-chip{
-  display:inline-flex;align-items:center;gap:5px;
-  padding:6px 12px;border-radius:8px;
-  background:var(--panel2);
-  border:1px solid var(--border);
-  font-size:.78rem;font-weight:500;
-  cursor:grab;
-  transition:transform .15s,box-shadow .15s,border-color .15s;
-  white-space:nowrap;
-}
-.elem-chip:hover{
-  transform:translateY(-1px);
-  box-shadow:0 4px 16px rgba(0,0,0,.3);
-  border-color:#333;
-}
-.elem-chip:active{cursor:grabbing}
-.elem-chip .emoji{font-size:1rem}
-.elem-chip.new-glow{
-  animation:chipGlow .8s ease;
-}
-@keyframes chipGlow{
-  0%{box-shadow:0 0 0 0 var(--glow)}
-  50%{box-shadow:0 0 20px 6px var(--glow)}
-  100%{box-shadow:0 0 0 0 transparent}
-}
-
 /* WORKSPACE */
-.workspace{
-  flex:1;position:relative;overflow:hidden;
-  background:var(--bg);
-  background-image:
-    radial-gradient(circle at 1px 1px, #1a1a28 1px, transparent 0);
-  background-size:40px 40px;
-}
+.workspace{flex:1;position:relative;overflow:hidden}
+#starCvs{position:absolute;inset:0;pointer-events:none;z-index:0}
 
-/* Dragged element on workspace */
-.work-elem{
-  position:absolute;
-  display:flex;align-items:center;gap:6px;
-  padding:10px 18px;border-radius:12px;
-  background:var(--panel2);
-  border:1px solid var(--border);
-  font-size:.88rem;font-weight:600;
-  cursor:grab;
-  box-shadow:0 4px 20px rgba(0,0,0,.4);
-  z-index:5;
-  transition:box-shadow .2s;
+/* SIDEBAR */
+.sidebar{width:290px;min-width:290px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;z-index:20}
+.sb-head{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.brand{font-family:'Newsreader',serif;font-size:1.4rem;font-weight:600;display:flex;align-items:baseline;gap:2px}
+.brand i{font-style:italic;font-weight:400;color:var(--accent)}
+.pill-count{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--dim);background:var(--panel2);padding:3px 9px;border-radius:6px;border:1px solid var(--border)}
+.sb-search{padding:7px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px}
+.sb-search svg{width:14px;height:14px;color:var(--dim);flex-shrink:0}
+.sb-search input{flex:1;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none}
+.sb-search input::placeholder{color:var(--dim)}
+.sort-row{padding:5px 10px;border-bottom:1px solid var(--border);display:flex;gap:3px}
+.sort-b{padding:3px 9px;border-radius:5px;border:1px solid transparent;background:none;color:var(--dim);font-family:'DM Sans',sans-serif;font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:.7px;cursor:pointer;transition:all .12s}
+.sort-b:hover{color:var(--text)}
+.sort-b.on{color:var(--accent);border-color:rgba(125,211,252,.2);background:rgba(125,211,252,.05)}
+
+/* Element list */
+.el-list{flex:1;overflow-y:auto;padding:5px 7px;display:flex;flex-wrap:wrap;align-content:flex-start;gap:4px}
+.el-list::-webkit-scrollbar{width:3px}
+.el-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.el-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 12px 6px 9px;border-radius:7px;
+  background:var(--panel2);border:1px solid var(--border);
+  font-size:.76rem;font-weight:500;cursor:grab;
+  transition:transform .1s,border-color .1s,box-shadow .1s;
   white-space:nowrap;
 }
-.work-elem:hover{box-shadow:0 6px 30px rgba(0,0,0,.5)}
-.work-elem .emoji{font-size:1.3rem}
-.work-elem .close{
-  margin-left:6px;
-  font-size:.7rem;
-  color:var(--text-dim);
-  cursor:pointer;
-  padding:2px 4px;
-  border-radius:4px;
-}
-.work-elem .close:hover{color:var(--accent2);background:rgba(239,68,68,.1)}
+.el-chip:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.el-chip .em{font-size:.95rem}
+.el-chip.is-first{border-color:rgba(251,191,36,.25);background:rgba(251,191,36,.04)}
+.el-chip.is-first::after{content:'✦ First';position:absolute;top:-8px;right:-4px;font-size:.42rem;color:var(--gold);font-weight:700;letter-spacing:.5px;background:var(--panel);padding:1px 4px;border-radius:3px;border:1px solid rgba(251,191,36,.2)}
+.el-chip{position:relative}
 
-/* Discovery flash */
-.discovery-overlay{
-  position:fixed;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  z-index:100;
-  background:rgba(0,0,0,0);
-  pointer-events:none;
-  transition:background .3s;
-}
-.discovery-overlay.show{background:rgba(0,0,0,.6);pointer-events:auto}
-.discovery-card{
-  text-align:center;
-  transform:scale(0.5);opacity:0;
-  transition:all .4s cubic-bezier(.175,.885,.32,1.275);
-}
-.discovery-overlay.show .discovery-card{transform:scale(1);opacity:1}
-.discovery-emoji{font-size:4rem;margin-bottom:12px}
-.discovery-name{
-  font-size:1.8rem;font-weight:700;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  margin-bottom:6px;
-}
-.discovery-sub{color:var(--text-dim);font-size:.85rem}
-.discovery-recipe{color:var(--text-dim);font-size:.75rem;margin-top:4px}
+/* Bottom bar */
+.bb{border-top:1px solid var(--border);padding:6px 8px;display:flex;gap:4px;justify-content:space-between;align-items:center}
+.bb-btn{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:7px;background:var(--panel2);border:1px solid var(--border);color:var(--dim);font-family:'DM Sans',sans-serif;font-size:.64rem;font-weight:600;cursor:pointer;transition:all .12s}
+.bb-btn:hover{color:var(--text);border-color:var(--border2)}
+.bb-btn .ic{font-size:.8rem}
 
-/* Particles */
-.particle{
-  position:fixed;
-  width:6px;height:6px;
-  border-radius:50%;
-  pointer-events:none;
-  z-index:101;
-}
-
-/* Hint bar */
-.hint-bar{
-  position:absolute;
-  bottom:16px;left:50%;transform:translateX(-50%);
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:10px 20px;
-  font-size:.8rem;
-  color:var(--text-dim);
-  display:flex;align-items:center;gap:8px;
-  z-index:6;
-  white-space:nowrap;
-}
-.hint-bar .kb{
-  background:var(--bg);
-  padding:2px 8px;
-  border-radius:4px;
-  border:1px solid var(--border);
-  font-size:.7rem;
-  font-family:'JetBrains Mono',monospace;
-  color:var(--text);
-}
-
-/* Clear workspace btn */
-.clear-ws{
-  position:absolute;top:14px;right:14px;
+/* WORKSPACE ELEMENTS */
+.w-el{
+  position:absolute;z-index:5;display:flex;align-items:center;gap:6px;
+  padding:8px 14px 8px 10px;border-radius:9px;
   background:var(--panel);border:1px solid var(--border);
-  border-radius:8px;padding:8px 14px;
-  color:var(--text-dim);font-size:.75rem;font-weight:600;
-  cursor:pointer;z-index:6;
-  font-family:'DM Sans',sans-serif;
-  transition:all .15s;
+  font-size:.84rem;font-weight:600;cursor:grab;
+  box-shadow:0 3px 15px rgba(0,0,0,.35);
+  transition:box-shadow .12s;white-space:nowrap;
 }
-.clear-ws:hover{border-color:var(--accent2);color:var(--accent2)}
+.w-el:hover{box-shadow:0 5px 22px rgba(0,0,0,.45)}
+.w-el.drag{z-index:50;box-shadow:0 10px 35px rgba(0,0,0,.5);cursor:grabbing}
+.w-el .em{font-size:1.1rem}
 
-/* Mobile */
-.menu-toggle{
-  display:none;position:fixed;top:10px;left:10px;z-index:20;
-  width:38px;height:38px;border-radius:8px;
-  background:var(--panel);border:1px solid var(--border);
-  color:var(--text);font-size:1.1rem;cursor:pointer;
-  align-items:center;justify-content:center;
+/* New item sparkle */
+.w-el.new-item{animation:popIn .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+.sparkle-ring{
+  position:absolute;inset:-12px;border-radius:20px;
+  border:2px solid var(--accent);opacity:0;
+  animation:sparkleRing .6s ease-out forwards;
+  pointer-events:none;
 }
-@media(max-width:700px){
-  .sidebar{position:fixed;left:-290px;top:0;bottom:0;transition:left .3s;z-index:15}
-  .sidebar.open{left:0}
-  .menu-toggle{display:flex}
+@keyframes sparkleRing{
+  0%{transform:scale(0.5);opacity:.7}
+  100%{transform:scale(1.4);opacity:0}
+}
+/* First discovery sparkle is gold */
+.sparkle-ring.gold{border-color:var(--gold)}
+.first-disc-badge{
+  position:absolute;top:-18px;left:50%;transform:translateX(-50%);
+  font-size:.5rem;font-weight:700;color:var(--gold);letter-spacing:1px;
+  text-transform:uppercase;white-space:nowrap;
+  animation:badgePop .5s cubic-bezier(.34,1.56,.64,1) forwards,badgeFade 2s ease-out 1s forwards;
+  pointer-events:none;text-shadow:0 0 8px rgba(251,191,36,.5);
+}
+@keyframes badgePop{0%{transform:translateX(-50%) scale(0) translateY(10px);opacity:0}100%{transform:translateX(-50%) scale(1) translateY(0);opacity:1}}
+@keyframes badgeFade{to{opacity:0}}
+
+/* WS buttons */
+.ws-btns{position:absolute;bottom:10px;left:10px;z-index:10;display:flex;gap:5px}
+.ws-b{padding:6px 12px;border-radius:7px;background:var(--panel);border:1px solid var(--border);color:var(--dim);font-family:'DM Sans',sans-serif;font-size:.64rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .12s}
+.ws-b:hover{color:var(--text);border-color:var(--border2)}
+
+/* Loading */
+.ld{position:absolute;z-index:30;display:none;pointer-events:none}
+.ld.on{display:block}
+.ld::after{content:'';display:block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .5s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* MODAL */
+.mo-bg{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center}
+.mo-bg.open{display:flex}
+.mo{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:94%;max-width:520px;max-height:78vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 16px 50px rgba(0,0,0,.5)}
+.mo-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.mo-head h2{font-size:.95rem;font-weight:700}
+.mo-tabs{display:flex;gap:10px}
+.mo-tab{font-size:.74rem;font-weight:600;color:var(--dim);cursor:pointer;padding-bottom:2px;border-bottom:2px solid transparent;transition:all .12s}
+.mo-tab:hover{color:var(--text)}
+.mo-tab.on{color:var(--text);border-color:var(--accent)}
+.mo-x{background:none;border:none;color:var(--dim);font-size:1.1rem;cursor:pointer;padding:3px 7px;border-radius:5px}
+.mo-x:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.mo-body{flex:1;overflow-y:auto;padding:14px 18px}
+.mo-body::-webkit-scrollbar{width:3px}
+.mo-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Save slots */
+.sv-slot{padding:12px 14px;border:1px solid var(--border);border-radius:9px;margin-bottom:7px;cursor:pointer;transition:all .12s;display:flex;justify-content:space-between;align-items:center}
+.sv-slot:hover{border-color:var(--border2)}
+.sv-slot.cur{border-color:var(--accent);background:rgba(125,211,252,.03)}
+.sv-info .sv-name{font-weight:600;font-size:.84rem}
+.sv-info .sv-meta{font-size:.62rem;color:var(--dim);margin-top:2px}
+.sv-acts{display:flex;gap:6px}
+.sv-act{font-size:.6rem;color:var(--dim);cursor:pointer;font-weight:600;padding:4px 8px;border-radius:5px;border:1px solid var(--border);transition:all .12s}
+.sv-act:hover{color:var(--text);border-color:var(--border2)}
+.sv-act.del:hover{color:#f44;border-color:rgba(255,68,68,.3)}
+
+/* Milestones */
+.mile{padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.mile .mico{font-size:1.5rem;width:36px;text-align:center}
+.mile .mtxt .mn{font-weight:600;font-size:.82rem}
+.mile .mtxt .md{font-size:.62rem;color:var(--dim);margin-top:1px}
+.mile.locked{opacity:.35}
+.mile.locked .mn{color:var(--dim)}
+.mile .check{margin-left:auto;color:var(--green);font-size:.9rem}
+
+/* Disc log items */
+.dl-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px}
+.dl-item:hover{background:rgba(255,255,255,.015)}
+.dl-item .em{font-size:1rem;width:24px;text-align:center}
+.dl-item .nm{font-weight:600;font-size:.78rem;flex:1}
+.dl-item .rc{font-size:.62rem;color:var(--dim)}
+
+@media(max-width:680px){
+  .sidebar{width:220px;min-width:220px}
+  .el-chip{font-size:.68rem;padding:5px 9px 5px 7px}
 }
 </style>
 </head>
 <body>
 
-<button class="menu-toggle" id="menuToggle">☰</button>
-
 <div class="app">
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <h1>⚗️ Element Forge</h1>
-      <div class="counter"><span id="countDisc">4</span> / <span id="countTotal">0</span></div>
+  <div class="workspace" id="ws">
+    <canvas id="starCvs"></canvas>
+    <div class="ws-btns">
+      <button class="ws-b" id="clearBtn">🗑️ Clear</button>
+      <button class="ws-b" id="undoBtn">↩ Undo</button>
     </div>
-    <div class="sidebar-search">
-      <input type="text" id="searchEl" placeholder="Search elements…">
+    <div class="ld" id="loader"></div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sb-head">
+      <div class="brand"><i>Element</i>&nbsp;Forge</div>
+      <div class="pill-count" id="cnt">4</div>
     </div>
-    <div class="elem-list" id="elemList"></div>
-  </aside>
-  <div class="workspace" id="workspace">
-    <button class="clear-ws" id="clearWs">✕ Clear Workspace</button>
-    <div class="hint-bar">
-      Drag elements from sidebar → Drop two near each other to combine
+    <div class="sb-search">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="srcIn" placeholder="Search items...">
+    </div>
+    <div class="sort-row">
+      <button class="sort-b on" data-s="time">Recent</button>
+      <button class="sort-b" data-s="alpha">A-Z</button>
+      <button class="sort-b" data-s="emoji">Emoji</button>
+    </div>
+    <div class="el-list" id="elList"></div>
+    <div class="bb">
+      <div style="display:flex;gap:4px">
+        <button class="bb-btn" id="menuBtn"><span class="ic">☰</span>Menu</button>
+        <button class="bb-btn" id="milesBtn"><span class="ic">🏆</span>Milestones</button>
+      </div>
+      <button class="bb-btn" id="logBtn"><span class="ic">📜</span>Log</button>
     </div>
   </div>
 </div>
 
-<!-- Discovery overlay -->
-<div class="discovery-overlay" id="discOverlay">
-  <div class="discovery-card">
-    <div class="discovery-emoji" id="discEmoji"></div>
-    <div class="discovery-name" id="discName"></div>
-    <div class="discovery-sub" id="discSub"></div>
-    <div class="discovery-recipe" id="discRecipe"></div>
+<!-- MODAL -->
+<div class="mo-bg" id="moBg">
+  <div class="mo">
+    <div class="mo-head">
+      <h2 id="moTitle">Menu</h2>
+      <button class="mo-x" id="moX">✕</button>
+    </div>
+    <div class="mo-body" id="moBody"></div>
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-//  MASSIVE ELEMENT DATABASE
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+const MK='NWtxcavnNWhvo1nMuGETTw6f0B8WFxRS';
+const STARTERS={Water:{e:'💧',t:0},Fire:{e:'🔥',t:1},Wind:{e:'💨',t:2},Earth:{e:'🌍',t:3}};
 
-const ELEMENTS = {
-  // ── TIER 0: STARTERS ──
-  "Fire":       {emoji:"🔥", tier:0, cat:"basic"},
-  "Water":      {emoji:"💧", tier:0, cat:"basic"},
-  "Earth":      {emoji:"🌍", tier:0, cat:"basic"},
-  "Air":        {emoji:"💨", tier:0, cat:"basic"},
+// MILESTONES (First Discovery system)
+const MILESTONES=[
+  {id:'life',need:10,icon:'🧬',name:'Create Life',desc:'Discover 10 elements to unlock the spark of life'},
+  {id:'tech',need:25,icon:'⚡',name:'Harness Energy',desc:'25 elements — electricity flows through your veins'},
+  {id:'civ',need:50,icon:'🏛️',name:'Build Civilization',desc:'50 elements — you\'ve built a world'},
+  {id:'god',need:100,icon:'👁️',name:'Playing God',desc:'100 elements — nothing is beyond your reach'},
+  {id:'madman',need:200,icon:'🤯',name:'Mad Scientist',desc:'200 elements — what have you created??'},
+  {id:'inf',need:500,icon:'♾️',name:'Infinite',desc:'500 elements — you ARE the forge'},
+];
 
-  // ── TIER 1: Basic combos ──
-  "Steam":      {emoji:"♨️", tier:1, cat:"gas"},
-  "Mud":        {emoji:"🟤", tier:1, cat:"material"},
-  "Lava":       {emoji:"🌋", tier:1, cat:"material"},
-  "Dust":       {emoji:"🌫️", tier:1, cat:"material"},
-  "Energy":     {emoji:"⚡", tier:1, cat:"force"},
-  "Rain":       {emoji:"🌧️", tier:1, cat:"weather"},
-  "Stone":      {emoji:"🪨", tier:1, cat:"material"},
-  "Pressure":   {emoji:"🔽", tier:1, cat:"force"},
-  "Smoke":      {emoji:"💨", tier:1, cat:"gas"},
-  "Cloud":      {emoji:"☁️", tier:1, cat:"weather"},
-  "Wind":       {emoji:"🌬️", tier:1, cat:"weather"},
-  "Pond":       {emoji:"🏞️", tier:1, cat:"nature"},
-  "Obsidian":   {emoji:"◼️", tier:1, cat:"material"},
+let els={},recipes={},log=[],workItems=[],curSave=0,idC=0,sortMode='time',pending=false,prevMilestone=0;
 
-  // ── TIER 2: Nature & Materials ──
-  "Plant":      {emoji:"🌱", tier:2, cat:"life"},
-  "Sand":       {emoji:"🏖️", tier:2, cat:"material"},
-  "Metal":      {emoji:"⚙️", tier:2, cat:"material"},
-  "Glass":      {emoji:"🔍", tier:2, cat:"material"},
-  "Clay":       {emoji:"🏺", tier:2, cat:"material"},
-  "Ice":        {emoji:"🧊", tier:2, cat:"material"},
-  "Snow":       {emoji:"❄️", tier:2, cat:"weather"},
-  "Storm":      {emoji:"⛈️", tier:2, cat:"weather"},
-  "Lightning":  {emoji:"⚡", tier:2, cat:"force"},
-  "Magma":      {emoji:"🔴", tier:2, cat:"material"},
-  "Ash":        {emoji:"⬛", tier:2, cat:"material"},
-  "Charcoal":   {emoji:"◾", tier:2, cat:"material"},
-  "Salt":       {emoji:"🧂", tier:2, cat:"material"},
-  "Oil":        {emoji:"🛢️", tier:2, cat:"material"},
-  "Fog":        {emoji:"🌁", tier:2, cat:"weather"},
-  "Swamp":      {emoji:"🌿", tier:2, cat:"nature"},
-  "River":      {emoji:"🏞️", tier:2, cat:"nature"},
-  "Lake":       {emoji:"🏊", tier:2, cat:"nature"},
-  "Mountain":   {emoji:"🏔️", tier:2, cat:"nature"},
-  "Volcano":    {emoji:"🌋", tier:2, cat:"nature"},
-  "Geyser":     {emoji:"⛲", tier:2, cat:"nature"},
-  "Quicksand":  {emoji:"⏬", tier:2, cat:"nature"},
-  "Tornado":    {emoji:"🌪️", tier:2, cat:"weather"},
-  "Earthquake": {emoji:"💥", tier:2, cat:"force"},
-
-  // ── TIER 3: Life & Advanced Materials ──
-  "Tree":       {emoji:"🌳", tier:3, cat:"life"},
-  "Flower":     {emoji:"🌸", tier:3, cat:"life"},
-  "Grass":      {emoji:"🌾", tier:3, cat:"life"},
-  "Moss":       {emoji:"🌿", tier:3, cat:"life"},
-  "Algae":      {emoji:"🟢", tier:3, cat:"life"},
-  "Mushroom":   {emoji:"🍄", tier:3, cat:"life"},
-  "Seed":       {emoji:"🌰", tier:3, cat:"life"},
-  "Wood":       {emoji:"🪵", tier:3, cat:"material"},
-  "Forest":     {emoji:"🌲", tier:3, cat:"nature"},
-  "Garden":     {emoji:"🪴", tier:3, cat:"nature"},
-  "Brick":      {emoji:"🧱", tier:3, cat:"material"},
-  "Pottery":    {emoji:"🏺", tier:3, cat:"material"},
-  "Steel":      {emoji:"🔩", tier:3, cat:"material"},
-  "Rust":       {emoji:"🟫", tier:3, cat:"material"},
-  "Crystal":    {emoji:"💎", tier:3, cat:"material"},
-  "Diamond":    {emoji:"💎", tier:3, cat:"material"},
-  "Coal":       {emoji:"⚫", tier:3, cat:"material"},
-  "Fossil":     {emoji:"🦴", tier:3, cat:"material"},
-  "Gem":        {emoji:"💠", tier:3, cat:"material"},
-  "Mirror":     {emoji:"🪞", tier:3, cat:"material"},
-  "Lens":       {emoji:"🔎", tier:3, cat:"material"},
-  "Prism":      {emoji:"🔺", tier:3, cat:"material"},
-  "Rubber":     {emoji:"⭕", tier:3, cat:"material"},
-  "Plastic":    {emoji:"🔲", tier:3, cat:"material"},
-  "Cement":     {emoji:"⬜", tier:3, cat:"material"},
-  "Concrete":   {emoji:"🏗️", tier:3, cat:"material"},
-  "Copper":     {emoji:"🟠", tier:3, cat:"material"},
-  "Gold":       {emoji:"🥇", tier:3, cat:"material"},
-  "Silver":     {emoji:"🥈", tier:3, cat:"material"},
-  "Bronze":     {emoji:"🥉", tier:3, cat:"material"},
-  "Sword":      {emoji:"⚔️", tier:3, cat:"tool"},
-  "Blade":      {emoji:"🗡️", tier:3, cat:"tool"},
-  "Hammer":     {emoji:"🔨", tier:3, cat:"tool"},
-  "Wire":       {emoji:"〰️", tier:3, cat:"material"},
-  "Nail":       {emoji:"📌", tier:3, cat:"tool"},
-  "Chain":      {emoji:"⛓️", tier:3, cat:"tool"},
-  "Shield":     {emoji:"🛡️", tier:3, cat:"tool"},
-  "Armor":      {emoji:"🦾", tier:3, cat:"tool"},
-  "Gunpowder":  {emoji:"💥", tier:3, cat:"material"},
-  "Paper":      {emoji:"📄", tier:3, cat:"material"},
-  "Ink":        {emoji:"🖊️", tier:3, cat:"material"},
-  "Dye":        {emoji:"🎨", tier:3, cat:"material"},
-  "Fabric":     {emoji:"🧵", tier:3, cat:"material"},
-  "Rope":       {emoji:"🪢", tier:3, cat:"tool"},
-  "Glue":       {emoji:"🩹", tier:3, cat:"material"},
-  "Wax":        {emoji:"🕯️", tier:3, cat:"material"},
-  "Soap":       {emoji:"🧼", tier:3, cat:"material"},
-  "Perfume":    {emoji:"🌺", tier:3, cat:"material"},
-  "Poison":     {emoji:"☠️", tier:3, cat:"material"},
-  "Medicine":   {emoji:"💊", tier:3, cat:"material"},
-  "Acid":       {emoji:"🧪", tier:3, cat:"material"},
-  "Alcohol":    {emoji:"🍷", tier:3, cat:"material"},
-  "Vinegar":    {emoji:"🫗", tier:3, cat:"material"},
-  "Honey":      {emoji:"🍯", tier:3, cat:"food"},
-  "Sugar":      {emoji:"🍬", tier:3, cat:"food"},
-  "Bread":      {emoji:"🍞", tier:3, cat:"food"},
-  "Cheese":     {emoji:"🧀", tier:3, cat:"food"},
-  "Butter":     {emoji:"🧈", tier:3, cat:"food"},
-  "Flour":      {emoji:"🌾", tier:3, cat:"food"},
-  "Dough":      {emoji:"🥖", tier:3, cat:"food"},
-  "Beer":       {emoji:"🍺", tier:3, cat:"food"},
-  "Wine":       {emoji:"🍷", tier:3, cat:"food"},
-
-  // ── TIER 4: Life forms ──
-  "Fish":       {emoji:"🐟", tier:4, cat:"life"},
-  "Bird":       {emoji:"🐦", tier:4, cat:"life"},
-  "Insect":     {emoji:"🐛", tier:4, cat:"life"},
-  "Bee":        {emoji:"🐝", tier:4, cat:"life"},
-  "Butterfly":  {emoji:"🦋", tier:4, cat:"life"},
-  "Worm":       {emoji:"🪱", tier:4, cat:"life"},
-  "Frog":       {emoji:"🐸", tier:4, cat:"life"},
-  "Snake":      {emoji:"🐍", tier:4, cat:"life"},
-  "Lizard":     {emoji:"🦎", tier:4, cat:"life"},
-  "Horse":      {emoji:"🐴", tier:4, cat:"life"},
-  "Dog":        {emoji:"🐕", tier:4, cat:"life"},
-  "Cat":        {emoji:"🐈", tier:4, cat:"life"},
-  "Cow":        {emoji:"🐄", tier:4, cat:"life"},
-  "Chicken":    {emoji:"🐔", tier:4, cat:"life"},
-  "Pig":        {emoji:"🐖", tier:4, cat:"life"},
-  "Sheep":      {emoji:"🐑", tier:4, cat:"life"},
-  "Wolf":       {emoji:"🐺", tier:4, cat:"life"},
-  "Bear":       {emoji:"🐻", tier:4, cat:"life"},
-  "Eagle":      {emoji:"🦅", tier:4, cat:"life"},
-  "Shark":      {emoji:"🦈", tier:4, cat:"life"},
-  "Whale":      {emoji:"🐳", tier:4, cat:"life"},
-  "Octopus":    {emoji:"🐙", tier:4, cat:"life"},
-  "Coral":      {emoji:"🪸", tier:4, cat:"life"},
-  "Jellyfish":  {emoji:"🪼", tier:4, cat:"life"},
-  "Egg":        {emoji:"🥚", tier:4, cat:"life"},
-  "Nest":       {emoji:"🪹", tier:4, cat:"life"},
-  "Ant":        {emoji:"🐜", tier:4, cat:"life"},
-  "Spider":     {emoji:"🕷️", tier:4, cat:"life"},
-  "Crab":       {emoji:"🦀", tier:4, cat:"life"},
-  "Turtle":     {emoji:"🐢", tier:4, cat:"life"},
-  "Dinosaur":   {emoji:"🦕", tier:4, cat:"life"},
-  "Dragon":     {emoji:"🐉", tier:4, cat:"myth"},
-  "Phoenix":    {emoji:"🔥", tier:4, cat:"myth"},
-  "Unicorn":    {emoji:"🦄", tier:4, cat:"myth"},
-
-  // ── TIER 4: Structures & Concepts ──
-  "House":      {emoji:"🏠", tier:4, cat:"build"},
-  "Wall":       {emoji:"🧱", tier:4, cat:"build"},
-  "Wheel":      {emoji:"☸️", tier:4, cat:"tool"},
-  "Cart":       {emoji:"🛒", tier:4, cat:"tool"},
-  "Boat":       {emoji:"⛵", tier:4, cat:"vehicle"},
-  "Sail":       {emoji:"🏴", tier:4, cat:"tool"},
-  "Bridge":     {emoji:"🌉", tier:4, cat:"build"},
-  "Castle":     {emoji:"🏰", tier:4, cat:"build"},
-  "Tower":      {emoji:"🗼", tier:4, cat:"build"},
-  "Ruins":      {emoji:"🏚️", tier:4, cat:"build"},
-  "Candle":     {emoji:"🕯️", tier:4, cat:"tool"},
-  "Lamp":       {emoji:"🏮", tier:4, cat:"tool"},
-  "Torch":      {emoji:"🔦", tier:4, cat:"tool"},
-  "Compass":    {emoji:"🧭", tier:4, cat:"tool"},
-  "Map":        {emoji:"🗺️", tier:4, cat:"tool"},
-  "Book":       {emoji:"📖", tier:4, cat:"knowledge"},
-  "Letter":     {emoji:"✉️", tier:4, cat:"knowledge"},
-  "Clock":      {emoji:"🕐", tier:4, cat:"tool"},
-  "Calendar":   {emoji:"📅", tier:4, cat:"tool"},
-  "Telescope":  {emoji:"🔭", tier:4, cat:"tool"},
-  "Microscope": {emoji:"🔬", tier:4, cat:"tool"},
-  "Magnet":     {emoji:"🧲", tier:4, cat:"tool"},
-  "Battery":    {emoji:"🔋", tier:4, cat:"tool"},
-  "Light":      {emoji:"💡", tier:4, cat:"force"},
-  "Rainbow":    {emoji:"🌈", tier:4, cat:"weather"},
-  "Aurora":     {emoji:"🌌", tier:4, cat:"weather"},
-  "Sunrise":    {emoji:"🌅", tier:4, cat:"weather"},
-  "Eclipse":    {emoji:"🌑", tier:4, cat:"space"},
-  "Tide":       {emoji:"🌊", tier:4, cat:"nature"},
-  "Tsunami":    {emoji:"🌊", tier:4, cat:"nature"},
-  "Glacier":    {emoji:"🏔️", tier:4, cat:"nature"},
-  "Desert":     {emoji:"🏜️", tier:4, cat:"nature"},
-  "Oasis":      {emoji:"🌴", tier:4, cat:"nature"},
-  "Jungle":     {emoji:"🌴", tier:4, cat:"nature"},
-  "Island":     {emoji:"🏝️", tier:4, cat:"nature"},
-  "Cave":       {emoji:"🕳️", tier:4, cat:"nature"},
-  "Beach":      {emoji:"🏖️", tier:4, cat:"nature"},
-  "Ocean":      {emoji:"🌊", tier:4, cat:"nature"},
-  "Continent":  {emoji:"🗺️", tier:4, cat:"nature"},
-  "Music":      {emoji:"🎵", tier:4, cat:"art"},
-  "Art":        {emoji:"🎨", tier:4, cat:"art"},
-  "Color":      {emoji:"🌈", tier:4, cat:"concept"},
-  "Sound":      {emoji:"🔊", tier:4, cat:"force"},
-
-  // ── TIER 5: Advanced / Tech / Civilization ──
-  "Human":      {emoji:"🧑", tier:5, cat:"life"},
-  "Farmer":     {emoji:"👨‍🌾", tier:5, cat:"life"},
-  "Warrior":    {emoji:"⚔️", tier:5, cat:"life"},
-  "Wizard":     {emoji:"🧙", tier:5, cat:"myth"},
-  "King":       {emoji:"👑", tier:5, cat:"life"},
-  "City":       {emoji:"🏙️", tier:5, cat:"build"},
-  "Village":    {emoji:"🏘️", tier:5, cat:"build"},
-  "Farm":       {emoji:"🌾", tier:5, cat:"build"},
-  "Mine":       {emoji:"⛏️", tier:5, cat:"build"},
-  "Factory":    {emoji:"🏭", tier:5, cat:"build"},
-  "Hospital":   {emoji:"🏥", tier:5, cat:"build"},
-  "School":     {emoji:"🏫", tier:5, cat:"build"},
-  "Library":    {emoji:"📚", tier:5, cat:"build"},
-  "Bank":       {emoji:"🏦", tier:5, cat:"build"},
-  "Church":     {emoji:"⛪", tier:5, cat:"build"},
-  "Stadium":    {emoji:"🏟️", tier:5, cat:"build"},
-  "Museum":     {emoji:"🏛️", tier:5, cat:"build"},
-  "Prison":     {emoji:"🔒", tier:5, cat:"build"},
-  "Engine":     {emoji:"🔧", tier:5, cat:"tech"},
-  "Steam Engine":{emoji:"🚂", tier:5, cat:"tech"},
-  "Electricity":{emoji:"⚡", tier:5, cat:"tech"},
-  "Telephone":  {emoji:"📞", tier:5, cat:"tech"},
-  "Radio":      {emoji:"📻", tier:5, cat:"tech"},
-  "Television": {emoji:"📺", tier:5, cat:"tech"},
-  "Computer":   {emoji:"💻", tier:5, cat:"tech"},
-  "Internet":   {emoji:"🌐", tier:5, cat:"tech"},
-  "Smartphone": {emoji:"📱", tier:5, cat:"tech"},
-  "Robot":      {emoji:"🤖", tier:5, cat:"tech"},
-  "AI":         {emoji:"🧠", tier:5, cat:"tech"},
-  "Rocket":     {emoji:"🚀", tier:5, cat:"tech"},
-  "Satellite":  {emoji:"🛰️", tier:5, cat:"tech"},
-  "Space Station":{emoji:"🛸", tier:5, cat:"tech"},
-  "Car":        {emoji:"🚗", tier:5, cat:"vehicle"},
-  "Train":      {emoji:"🚆", tier:5, cat:"vehicle"},
-  "Airplane":   {emoji:"✈️", tier:5, cat:"vehicle"},
-  "Submarine":  {emoji:"🚢", tier:5, cat:"vehicle"},
-  "Bicycle":    {emoji:"🚲", tier:5, cat:"vehicle"},
-  "Ship":       {emoji:"🚢", tier:5, cat:"vehicle"},
-  "Cannon":     {emoji:"💣", tier:5, cat:"tool"},
-  "Bomb":       {emoji:"💣", tier:5, cat:"tool"},
-  "Dynamite":   {emoji:"🧨", tier:5, cat:"tool"},
-  "Fireworks":  {emoji:"🎆", tier:5, cat:"tool"},
-  "Camera":     {emoji:"📷", tier:5, cat:"tech"},
-  "Movie":      {emoji:"🎬", tier:5, cat:"art"},
-  "Photograph": {emoji:"🖼️", tier:5, cat:"art"},
-  "Pizza":      {emoji:"🍕", tier:5, cat:"food"},
-  "Cake":       {emoji:"🎂", tier:5, cat:"food"},
-  "Chocolate":  {emoji:"🍫", tier:5, cat:"food"},
-  "Coffee":     {emoji:"☕", tier:5, cat:"food"},
-  "Tea":        {emoji:"🍵", tier:5, cat:"food"},
-  "Sushi":      {emoji:"🍣", tier:5, cat:"food"},
-  "Ice Cream":  {emoji:"🍦", tier:5, cat:"food"},
-  "Cookie":     {emoji:"🍪", tier:5, cat:"food"},
-  "Money":      {emoji:"💰", tier:5, cat:"concept"},
-  "Law":        {emoji:"⚖️", tier:5, cat:"concept"},
-  "Religion":   {emoji:"🙏", tier:5, cat:"concept"},
-  "Philosophy": {emoji:"🤔", tier:5, cat:"concept"},
-  "Science":    {emoji:"🔬", tier:5, cat:"concept"},
-  "Love":       {emoji:"❤️", tier:5, cat:"concept"},
-  "War":        {emoji:"⚔️", tier:5, cat:"concept"},
-  "Peace":      {emoji:"☮️", tier:5, cat:"concept"},
-  "Time":       {emoji:"⏳", tier:5, cat:"concept"},
-  "Death":      {emoji:"💀", tier:5, cat:"concept"},
-  "Life":       {emoji:"🧬", tier:5, cat:"concept"},
-  "Dream":      {emoji:"💭", tier:5, cat:"concept"},
-  "Story":      {emoji:"📜", tier:5, cat:"concept"},
-  "Magic":      {emoji:"✨", tier:5, cat:"myth"},
-  "Potion":     {emoji:"🧪", tier:5, cat:"myth"},
-  "Spell":      {emoji:"📿", tier:5, cat:"myth"},
-  "Ghost":      {emoji:"👻", tier:5, cat:"myth"},
-  "Vampire":    {emoji:"🧛", tier:5, cat:"myth"},
-  "Zombie":     {emoji:"🧟", tier:5, cat:"myth"},
-  "Werewolf":   {emoji:"🐺", tier:5, cat:"myth"},
-  "Angel":      {emoji:"👼", tier:5, cat:"myth"},
-  "Demon":      {emoji:"😈", tier:5, cat:"myth"},
-  "Galaxy":     {emoji:"🌌", tier:5, cat:"space"},
-  "Star":       {emoji:"⭐", tier:5, cat:"space"},
-  "Planet":     {emoji:"🪐", tier:5, cat:"space"},
-  "Moon":       {emoji:"🌙", tier:5, cat:"space"},
-  "Sun":        {emoji:"☀️", tier:5, cat:"space"},
-  "Black Hole": {emoji:"🕳️", tier:5, cat:"space"},
-  "Supernova":  {emoji:"💫", tier:5, cat:"space"},
-  "Nebula":     {emoji:"🌌", tier:5, cat:"space"},
-  "Comet":      {emoji:"☄️", tier:5, cat:"space"},
-  "Asteroid":   {emoji:"🪨", tier:5, cat:"space"},
-  "Alien":      {emoji:"👽", tier:5, cat:"myth"},
-  "UFO":        {emoji:"🛸", tier:5, cat:"myth"},
-  "Meme":       {emoji:"🤣", tier:5, cat:"concept"},
-  "Virus":      {emoji:"🦠", tier:5, cat:"life"},
-  "Bacteria":   {emoji:"🔬", tier:5, cat:"life"},
-  "DNA":        {emoji:"🧬", tier:5, cat:"concept"},
-  "Atom":       {emoji:"⚛️", tier:5, cat:"concept"},
-  "Nuke":       {emoji:"☢️", tier:5, cat:"tech"},
-  "Laser":      {emoji:"📡", tier:5, cat:"tech"},
-  "Hologram":   {emoji:"📽️", tier:5, cat:"tech"},
-  "Cyborg":     {emoji:"🦿", tier:5, cat:"tech"},
-  "Clone":      {emoji:"👯", tier:5, cat:"tech"},
-  "Multiverse": {emoji:"🌀", tier:5, cat:"concept"},
-  "Singularity":{emoji:"⚫", tier:5, cat:"concept"},
-  "Utopia":     {emoji:"🌅", tier:5, cat:"concept"},
-  "Dystopia":   {emoji:"🌑", tier:5, cat:"concept"},
-};
-
-// ═══════════════════════════════════════════════════════════════
-//  RECIPE DATABASE (500+ recipes) - key: sorted "A+B"
-// ═══════════════════════════════════════════════════════════════
-const RECIPES = {
-  // ── TIER 1 ──
-  "Fire+Water": "Steam",
-  "Earth+Water": "Mud",
-  "Earth+Fire": "Lava",
-  "Air+Earth": "Dust",
-  "Air+Fire": "Energy",
-  "Air+Water": "Rain",
-  "Earth+Earth": "Stone",
-  "Air+Air": "Pressure",
-  "Fire+Fire": "Energy",
-  "Water+Water": "Pond",
-  "Fire+Dust": "Smoke",
-  "Air+Steam": "Cloud",
-  "Air+Pressure": "Wind",
-  "Lava+Water": "Obsidian",
-
-  // ── TIER 2 ──
-  "Earth+Rain": "Plant",
-  "Stone+Wind": "Sand",
-  "Fire+Stone": "Metal",
-  "Fire+Sand": "Glass",
-  "Mud+Stone": "Clay",
-  "Water+Wind": "Ice",
-  "Cloud+Ice": "Snow",
-  "Cloud+Energy": "Storm",
-  "Energy+Storm": "Lightning",
-  "Fire+Lava": "Magma",
-  "Fire+Wood": "Charcoal",
-  "Fire+Plant": "Ash",
-  "Ocean+Stone": "Salt",
-  "Earth+Pressure": "Oil",
-  "Cloud+Water": "Fog",
-  "Mud+Plant": "Swamp",
-  "Rain+Stone": "River",
-  "River+Water": "Lake",
-  "Earth+Stone": "Mountain",
-  "Lava+Mountain": "Volcano",
-  "Steam+Water": "Geyser",
-  "Mud+Sand": "Quicksand",
-  "Air+Storm": "Tornado",
-  "Earth+Energy": "Earthquake",
-  "Salt+Water": "Ocean",
-  "Cloud+Wind": "Storm",
-  "Ice+Wind": "Snow",
-
-  // ── TIER 3: Life ──
-  "Plant+Rain": "Tree",
-  "Plant+Sun": "Flower",
-  "Earth+Seed": "Grass",
-  "Plant+Stone": "Moss",
-  "Plant+Water": "Algae",
-  "Earth+Plant": "Mushroom",
-  "Plant+Wind": "Seed",
-  "Fire+Tree": "Wood",
-  "Tree+Tree": "Forest",
-  "Flower+Plant": "Garden",
-  "Plant+Swamp": "Mushroom",
-  "Mud+Water": "Swamp",
-
-  // ── Materials ──
-  "Clay+Fire": "Brick",
-  "Clay+Pottery": "Pottery",
-  "Clay+Water": "Pottery",
-  "Fire+Metal": "Steel",
-  "Metal+Water": "Rust",
-  "Earth+Pressure": "Crystal",
-  "Crystal+Pressure": "Diamond",
-  "Earth+Charcoal": "Coal",
-  "Dinosaur+Earth": "Fossil",
-  "Crystal+Fire": "Gem",
-  "Glass+Metal": "Mirror",
-  "Glass+Glass": "Lens",
-  "Glass+Light": "Prism",
-  "Fire+Oil": "Rubber",
-  "Oil+Pressure": "Plastic",
-  "Sand+Stone": "Cement",
-  "Cement+Stone": "Concrete",
-  "Fire+Ore": "Copper",
-  "Metal+Sun": "Gold",
-  "Metal+Moon": "Silver",
-  "Copper+Metal": "Bronze",
-  "Metal+Stone": "Ore",
-  "Metal+Metal": "Steel",
-
-  // Tools & Weapons
-  "Metal+Fire": "Blade",
-  "Blade+Wood": "Sword",
-  "Metal+Wood": "Hammer",
-  "Metal+Lightning": "Wire",
-  "Metal+Hammer": "Nail",
-  "Metal+Metal": "Chain",
-  "Metal+Shield": "Armor",
-  "Steel+Wood": "Shield",
-  "Coal+Fire": "Gunpowder",
-  "Wood+Plant": "Paper",
-  "Charcoal+Water": "Ink",
-  "Flower+Water": "Dye",
-  "Plant+Plant": "Fabric",
-  "Fabric+Fabric": "Rope",
-  "Plant+Oil": "Glue",
-  "Fire+Oil": "Wax",
-  "Ash+Oil": "Soap",
-  "Flower+Alcohol": "Perfume",
-  "Mushroom+Water": "Poison",
-  "Plant+Science": "Medicine",
-  "Poison+Water": "Acid",
-  "Fruit+Time": "Alcohol",
-  "Alcohol+Water": "Vinegar",
-  "Plant+Sugar": "Fruit",
-
-  // Food
-  "Bee+Flower": "Honey",
-  "Plant+Sun": "Sugar",
-  "Dough+Fire": "Bread",
-  "Butter+Milk": "Cheese",
-  "Cow+Water": "Milk",
-  "Milk+Pressure": "Butter",
-  "Grain+Stone": "Flour",
-  "Flour+Water": "Dough",
-  "Grain+Water": "Beer",
-  "Alcohol+Fruit": "Wine",
-  "Grass+Seed": "Grain",
-  "Plant+Earth": "Grain",
-
-  // ── TIER 4: Animals ──
-  "Algae+Water": "Fish",
-  "Air+Egg": "Bird",
-  "Earth+Egg": "Lizard",
-  "Mud+Worm": "Insect",
-  "Flower+Insect": "Bee",
-  "Insect+Wind": "Butterfly",
-  "Earth+Insect": "Worm",
-  "Insect+Swamp": "Frog",
-  "Fire+Lizard": "Snake",
-  "Earth+Lizard": "Lizard",
-  "Grass+Horse": "Horse",
-  "Mud+Wolf": "Dog",
-  "Forest+Mouse": "Cat",
-  "Grass+Livestock": "Cow",
-  "Bird+Farm": "Chicken",
-  "Cloud+Livestock": "Sheep",
-  "Mountain+Livestock": "Pig",
-  "Dog+Forest": "Wolf",
-  "Forest+Wolf": "Bear",
-  "Bird+Mountain": "Eagle",
-  "Fish+Ocean": "Shark",
-  "Fish+Fish": "Shark",
-  "Ocean+Shark": "Whale",
-  "Fish+Water": "Octopus",
-  "Ocean+Plant": "Coral",
-  "Ocean+Algae": "Jellyfish",
-  "Bird+Nest": "Egg",
-  "Bird+Tree": "Nest",
-  "Earth+Insect": "Ant",
-  "Insect+Rope": "Spider",
-  "Ocean+Insect": "Crab",
-  "Lizard+Shield": "Turtle",
-  "Lizard+Time": "Dinosaur",
-  "Fire+Lizard": "Dragon",
-  "Bird+Fire": "Phoenix",
-  "Horse+Magic": "Unicorn",
-  "Animal+Earth": "Livestock",
-  "Fish+Frog": "Animal",
-  "Insect+Earth": "Mouse",
-  "Plant+Worm": "Fruit",
-
-  // Structures
-  "Brick+Wood": "House",
-  "Brick+Brick": "Wall",
-  "Stone+Wood": "Wheel",
-  "Wheel+Wood": "Cart",
-  "Water+Wood": "Boat",
-  "Fabric+Wind": "Sail",
-  "River+Stone": "Bridge",
-  "Stone+Tower": "Castle",
-  "Brick+Stone": "Tower",
-  "House+Time": "Ruins",
-  "Fire+Wax": "Candle",
-  "Fire+Metal": "Lamp",
-  "Fire+Wood": "Torch",
-  "Magnet+Metal": "Compass",
-  "Ink+Paper": "Map",
-  "Ink+Paper": "Book",
-  "Paper+Paper": "Book",
-  "Ink+Letter": "Letter",
-  "Paper+Ink": "Letter",
-  "Gear+Metal": "Clock",
-  "Paper+Time": "Calendar",
-  "Glass+Star": "Telescope",
-  "Glass+Lens": "Microscope",
-  "Metal+Lightning": "Magnet",
-  "Acid+Metal": "Battery",
-  "Energy+Glass": "Light",
-  "Light+Rain": "Rainbow",
-  "Light+Snow": "Aurora",
-  "Light+Ocean": "Sunrise",
-  "Moon+Sun": "Eclipse",
-  "Moon+Ocean": "Tide",
-  "Earthquake+Ocean": "Tsunami",
-  "Ice+Mountain": "Glacier",
-  "Sand+Sun": "Desert",
-  "Desert+Water": "Oasis",
-  "Forest+Rain": "Jungle",
-  "Ocean+Volcano": "Island",
-  "Mountain+Water": "Cave",
-  "Ocean+Sand": "Beach",
-  "Lake+Lake": "Ocean",
-  "Mountain+Ocean": "Continent",
-  "Air+Sound": "Music",
-  "Color+Ink": "Art",
-  "Dye+Light": "Color",
-  "Air+Energy": "Sound",
-  "Metal+Metal": "Gear",
-
-  // ── TIER 5: Civilization ──
-  "Animal+Intelligence": "Human",
-  "Life+Earth": "Human",
-  "DNA+Animal": "Human",
-  "Human+Plant": "Farmer",
-  "Human+Sword": "Warrior",
-  "Human+Magic": "Wizard",
-  "Human+Castle": "King",
-  "Human+Crown": "King",
-  "House+House": "Village",
-  "Village+Village": "City",
-  "Human+Plant": "Farm",
-  "Earth+Metal": "Mine",
-  "Machine+Metal": "Factory",
-  "House+Medicine": "Hospital",
-  "Book+House": "School",
-  "Book+Book": "Library",
-  "Gold+House": "Bank",
-  "Religion+House": "Church",
-  "City+Sport": "Stadium",
-  "Art+House": "Museum",
-  "Law+Wall": "Prison",
-  "Metal+Wheel": "Machine",
-  "Fire+Machine": "Engine",
-  "Engine+Steam": "Steam Engine",
-  "Lightning+Wire": "Electricity",
-  "Electricity+Sound": "Telephone",
-  "Electricity+Sound": "Radio",
-  "Electricity+Light": "Television",
-  "Electricity+Machine": "Computer",
-  "Computer+Computer": "Internet",
-  "Computer+Telephone": "Smartphone",
-  "Computer+Metal": "Robot",
-  "Computer+Human": "AI",
-  "Engine+Gunpowder": "Rocket",
-  "Rocket+Space": "Satellite",
-  "Rocket+Satellite": "Space Station",
-  "Engine+Wheel": "Car",
-  "Engine+Rail": "Train",
-  "Engine+Sail": "Airplane",
-  "Air+Engine": "Airplane",
-  "Boat+Engine": "Ship",
-  "Engine+Water": "Submarine",
-  "Human+Wheel": "Bicycle",
-  "Gunpowder+Metal": "Cannon",
-  "Gunpowder+Pressure": "Bomb",
-  "Gunpowder+Fire": "Dynamite",
-  "Fire+Gunpowder": "Fireworks",
-  "Glass+Light": "Camera",
-  "Camera+Story": "Movie",
-  "Camera+Light": "Photograph",
-  "Metal+Metal": "Rail",
-  "Rocket+Star": "Space",
-
-  // Food advanced
-  "Bread+Cheese": "Pizza",
-  "Bread+Fire": "Pizza",
-  "Dough+Sugar": "Cake",
-  "Honey+Sugar": "Chocolate",
-  "Bean+Water": "Coffee",
-  "Plant+Water": "Tea",
-  "Fish+Rice": "Sushi",
-  "Ice+Milk": "Ice Cream",
-  "Dough+Honey": "Cookie",
-  "Plant+Fire": "Bean",
-  "Grass+Water": "Rice",
-
-  // Concepts
-  "Gold+Paper": "Money",
-  "Human+Book": "Law",
-  "Human+Church": "Religion",
-  "Human+Question": "Philosophy",
-  "Human+Microscope": "Science",
-  "Human+Human": "Love",
-  "Sword+Sword": "War",
-  "Love+War": "Peace",
-  "Clock+Sand": "Time",
-  "Human+Time": "Death",
-  "Energy+Time": "Life",
-  "Human+Sleep": "Dream",
-  "Book+Ink": "Story",
-  "Night+Human": "Sleep",
-  "Energy+Water": "Sleep",
-  "Human+Telescope": "Question",
-  "Human+Ball": "Sport",
-  "Human+Music": "Dance",
-  "Animal+Human": "Intelligence",
-  "Brain+Energy": "Intelligence",
-  "Human+AI": "Cyborg",
-  "Energy+Thought": "Intelligence",
-  "Human+Dream": "Thought",
-  "Human+Brain": "Brain",
-  "Mushroom+Brain": "Brain",
-
-  // Mythical
-  "Energy+Human": "Magic",
-  "Magic+Water": "Potion",
-  "Magic+Book": "Spell",
-  "Death+Human": "Ghost",
-  "Blood+Ghost": "Vampire",
-  "Death+Mud": "Zombie",
-  "Human+Wolf": "Werewolf",
-  "Human+Cloud": "Angel",
-  "Fire+Ghost": "Demon",
-  "Human+Fire": "Blood",
-  "Vampire+Human": "Blood",
-  "Gold+King": "Crown",
-  "Music+Wind": "Dance",
-
-  // Space
-  "Star+Star": "Galaxy",
-  "Fire+Space": "Star",
-  "Earth+Space": "Planet",
-  "Planet+Stone": "Moon",
-  "Star+Energy": "Sun",
-  "Star+Death": "Black Hole",
-  "Star+Bomb": "Supernova",
-  "Dust+Star": "Nebula",
-  "Ice+Space": "Comet",
-  "Stone+Space": "Asteroid",
-  "Life+Planet": "Alien",
-  "Alien+Ship": "UFO",
-  "Rocket+Mountain": "Space",
-
-  // Meta / Modern
-  "Internet+Funny": "Meme",
-  "Internet+Art": "Meme",
-  "Human+Laugh": "Funny",
-  "Human+Bacteria": "Virus",
-  "Water+Microscope": "Bacteria",
-  "Life+Science": "DNA",
-  "Energy+Science": "Atom",
-  "Atom+Bomb": "Nuke",
-  "Light+Energy": "Laser",
-  "Light+Computer": "Hologram",
-  "Human+Robot": "Cyborg",
-  "DNA+Science": "Clone",
-  "Space+Space": "Multiverse",
-  "AI+Black Hole": "Singularity",
-  "City+Peace": "Utopia",
-  "City+War": "Dystopia",
-  "Human+Joy": "Laugh",
-  "Love+Human": "Joy",
-
-  // BONUS cross combos
-  "Dragon+Water": "Steam Engine",
-  "Dragon+Knight": "Story",
-  "Warrior+Castle": "Knight",
-  "Human+Armor": "Knight",
-  "Snow+Fire": "Water",
-  "Ice+Fire": "Water",
-  "Obsidian+Fire": "Lava",
-  "Sand+Lightning": "Glass",
-  "Tree+Lightning": "Fire",
-  "Cloud+Cloud": "Storm",
-  "Mountain+Mountain": "Mountain Range",
-  "Forest+Fire": "Ash",
-  "Dinosaur+Asteroid": "Fossil",
-  "Dinosaur+Fire": "Dragon",
-  "Robot+AI": "Singularity",
-  "Internet+Smartphone": "Social Media",
-  "Human+Internet": "Social Media",
-  "Social Media+Human": "Meme",
-  "Zombie+Virus": "Apocalypse",
-  "Nuke+City": "Apocalypse",
-  "Apocalypse+Time": "Ruins",
-  "Cookie+Milk": "Happiness",
-  "Love+Time": "Happiness",
-  "Music+Dance": "Party",
-  "Human+Party": "Happiness",
-  "Gold+Dragon": "Treasure",
-  "Cave+Gold": "Treasure",
-  "Map+Treasure": "Adventure",
-  "Human+Adventure": "Hero",
-  "Hero+Dragon": "Legend",
-  "Book+Legend": "Mythology",
-  "Mythology+Human": "Religion",
-  "Star+Wish": "Miracle",
-  "Human+Star": "Wish",
-  "Dream+Magic": "Wish",
-  "Light+Dark": "Balance",
-  "Good+Evil": "Balance",
-  "Angel+Demon": "Balance",
-  "Sun+Night": "Dark",
-  "Moon+Time": "Night",
-  "Angel+Human": "Good",
-  "Demon+Human": "Evil",
-  "Pizza+Pizza": "Feast",
-  "Feast+Human": "Party",
-  "Coffee+Human": "Productivity",
-  "Productivity+Computer": "Startup",
-  "Startup+Money": "Corporation",
-  "Corporation+City": "Dystopia",
-  "Startup+Love": "Utopia",
-  "Cat+Internet": "Meme",
-  "Dog+Human": "Friendship",
-  "Cat+Human": "Indifference",
-  "Coffee+Coffee": "Anxiety",
-  "Human+Anxiety": "Art",
-  "Rain+Sun": "Rainbow",
-  "Diamond+Ring": "Wedding",
-  "Love+Ring": "Wedding",
-  "Metal+Circle": "Ring",
-  "Gold+Love": "Ring",
-  "Wedding+Time": "Family",
-  "Human+House": "Family",
-  "Family+Family": "Community",
-  "Community+Community": "Civilization",
-  "Civilization+Space": "Utopia",
-
-  // Extra bonus
-  "Mountain Range+Snow": "Alps",
-  "Sand+Wind": "Dune",
-  "Dune+Worm": "Sandworm",
-  "Sandworm+Human": "Legend",
-};
-// Add some bonus elements that only appear as results
-Object.assign(ELEMENTS, {
-  "Mountain Range":{emoji:"⛰️",tier:4,cat:"nature"},
-  "Social Media":{emoji:"📱",tier:5,cat:"tech"},
-  "Apocalypse":{emoji:"💀",tier:5,cat:"concept"},
-  "Happiness":{emoji:"😊",tier:5,cat:"concept"},
-  "Party":{emoji:"🎉",tier:5,cat:"concept"},
-  "Treasure":{emoji:"💎",tier:5,cat:"concept"},
-  "Adventure":{emoji:"🗺️",tier:5,cat:"concept"},
-  "Hero":{emoji:"🦸",tier:5,cat:"myth"},
-  "Legend":{emoji:"📜",tier:5,cat:"concept"},
-  "Mythology":{emoji:"📖",tier:5,cat:"concept"},
-  "Miracle":{emoji:"✨",tier:5,cat:"concept"},
-  "Wish":{emoji:"🌟",tier:5,cat:"concept"},
-  "Balance":{emoji:"☯️",tier:5,cat:"concept"},
-  "Dark":{emoji:"🌑",tier:5,cat:"concept"},
-  "Night":{emoji:"🌙",tier:4,cat:"weather"},
-  "Good":{emoji:"😇",tier:5,cat:"concept"},
-  "Evil":{emoji:"😈",tier:5,cat:"concept"},
-  "Feast":{emoji:"🍽️",tier:5,cat:"food"},
-  "Productivity":{emoji:"📊",tier:5,cat:"concept"},
-  "Startup":{emoji:"🚀",tier:5,cat:"concept"},
-  "Corporation":{emoji:"🏢",tier:5,cat:"build"},
-  "Friendship":{emoji:"🤝",tier:5,cat:"concept"},
-  "Indifference":{emoji:"😒",tier:5,cat:"concept"},
-  "Anxiety":{emoji:"😰",tier:5,cat:"concept"},
-  "Ring":{emoji:"💍",tier:5,cat:"tool"},
-  "Wedding":{emoji:"💒",tier:5,cat:"concept"},
-  "Family":{emoji:"👨‍👩‍👧‍👦",tier:5,cat:"concept"},
-  "Community":{emoji:"🏘️",tier:5,cat:"concept"},
-  "Civilization":{emoji:"🌆",tier:5,cat:"concept"},
-  "Knight":{emoji:"🛡️",tier:4,cat:"life"},
-  "Funny":{emoji:"😂",tier:4,cat:"concept"},
-  "Joy":{emoji:"😄",tier:4,cat:"concept"},
-  "Livestock":{emoji:"🐄",tier:3,cat:"life"},
-  "Animal":{emoji:"🐾",tier:3,cat:"life"},
-  "Mouse":{emoji:"🐭",tier:3,cat:"life"},
-  "Grain":{emoji:"🌾",tier:2,cat:"food"},
-  "Fruit":{emoji:"🍎",tier:3,cat:"food"},
-  "Blood":{emoji:"🩸",tier:4,cat:"material"},
-  "Ore":{emoji:"⛏️",tier:2,cat:"material"},
-  "Gear":{emoji:"⚙️",tier:3,cat:"tool"},
-  "Machine":{emoji:"🏗️",tier:4,cat:"tech"},
-  "Rail":{emoji:"🛤️",tier:4,cat:"build"},
-  "Space":{emoji:"🌌",tier:5,cat:"space"},
-  "Bean":{emoji:"☕",tier:3,cat:"food"},
-  "Rice":{emoji:"🍚",tier:3,cat:"food"},
-  "Milk":{emoji:"🥛",tier:3,cat:"food"},
-  "Circle":{emoji:"⭕",tier:2,cat:"concept"},
-  "Alps":{emoji:"🏔️",tier:5,cat:"nature"},
-  "Dune":{emoji:"🏜️",tier:4,cat:"nature"},
-  "Sandworm":{emoji:"🐛",tier:5,cat:"myth"},
-  "Brain":{emoji:"🧠",tier:4,cat:"life"},
-  "Thought":{emoji:"💭",tier:4,cat:"concept"},
-  "Intelligence":{emoji:"🧠",tier:4,cat:"concept"},
-  "Dance":{emoji:"💃",tier:4,cat:"art"},
-  "Sport":{emoji:"⚽",tier:4,cat:"concept"},
-  "Sleep":{emoji:"😴",tier:3,cat:"concept"},
-  "Question":{emoji:"❓",tier:4,cat:"concept"},
-});
-
-// ═══════════════════════════════════════════════════════════════
-//  GAME STATE
-// ═══════════════════════════════════════════════════════════════
-const totalElements = Object.keys(ELEMENTS).length;
-let discovered = new Set(["Fire","Water","Earth","Air"]);
-let workspaceItems = []; // {id, name, x, y}
-let dragItem = null;
-let dragSource = null; // 'sidebar' or 'workspace'
-let dragOffX = 0, dragOffY = 0;
-let idCounter = 0;
-
-// Load saved progress
-try {
-  const saved = localStorage.getItem('elementforge_discovered');
-  if(saved) discovered = new Set(JSON.parse(saved));
-} catch(e){}
-
-function saveProgress(){
-  localStorage.setItem('elementforge_discovered', JSON.stringify([...discovered]));
+function load(slot=0){
+  try{
+    const d=JSON.parse(localStorage.getItem('ef3_'+slot));
+    if(d){els=d.els||{};recipes=d.rec||{};log=d.log||[];idC=d.idc||0}
+    else reset();
+  }catch(e){reset()}
+  workItems=[];
+  checkMilestones();
+  renderSB();
 }
+function reset(){els={};for(const[k,v]of Object.entries(STARTERS))els[k]={e:v.e,t:v.t,first:false};recipes={};log=[];idC=0}
+function save(slot=0){localStorage.setItem('ef3_'+slot,JSON.stringify({els,rec:recipes,log,idc:idC,at:Date.now()}))}
 
-// ═══════════════════════════════════════════════════════════════
-//  RENDER SIDEBAR
-// ═══════════════════════════════════════════════════════════════
-const elemList = document.getElementById('elemList');
-const countDisc = document.getElementById('countDisc');
-const countTotal = document.getElementById('countTotal');
-const searchEl = document.getElementById('searchEl');
-
-countTotal.textContent = totalElements;
-
-function renderSidebar(){
-  const q = searchEl.value.toLowerCase();
-  elemList.innerHTML = '';
-  const sorted = [...discovered].sort((a,b) => {
-    const ta = ELEMENTS[a]?.tier||0, tb = ELEMENTS[b]?.tier||0;
-    if(ta !== tb) return ta - tb;
-    return a.localeCompare(b);
-  });
-  sorted.forEach(name => {
-    if(q && !name.toLowerCase().includes(q)) return;
-    const el = ELEMENTS[name];
-    if(!el) return;
-    const chip = document.createElement('div');
-    chip.className = 'elem-chip';
-    chip.innerHTML = `<span class="emoji">${el.emoji}</span>${name}`;
-    chip.draggable = false;
-    // Mouse drag from sidebar
-    chip.addEventListener('mousedown', e => startSidebarDrag(e, name));
-    chip.addEventListener('touchstart', e => { e.preventDefault(); startSidebarDrag(e, name); }, {passive:false});
-    elemList.appendChild(chip);
-  });
-  countDisc.textContent = discovered.size;
-}
-
-searchEl.addEventListener('input', renderSidebar);
-renderSidebar();
-
-// ═══════════════════════════════════════════════════════════════
-//  DRAG & DROP SYSTEM
-// ═══════════════════════════════════════════════════════════════
-const workspace = document.getElementById('workspace');
-let floatingEl = null;
-
-function startSidebarDrag(e, name){
-  const t = e.touches ? e.touches[0] : e;
-  dragSource = 'sidebar';
-  dragItem = {name, id: null};
-  createFloating(name, t.clientX, t.clientY);
-}
-
-function createFloating(name, x, y){
-  const el = ELEMENTS[name];
-  if(floatingEl) floatingEl.remove();
-  floatingEl = document.createElement('div');
-  floatingEl.className = 'work-elem';
-  floatingEl.style.position = 'fixed';
-  floatingEl.style.zIndex = 1000;
-  floatingEl.style.pointerEvents = 'none';
-  floatingEl.style.transition = 'none';
-  floatingEl.innerHTML = `<span class="emoji">${el.emoji}</span>${name}`;
-  document.body.appendChild(floatingEl);
-  const rect = floatingEl.getBoundingClientRect();
-  dragOffX = rect.width / 2;
-  dragOffY = rect.height / 2;
-  floatingEl.style.left = (x - dragOffX) + 'px';
-  floatingEl.style.top = (y - dragOffY) + 'px';
-}
-
-document.addEventListener('mousemove', onDragMove);
-document.addEventListener('touchmove', onDragMove, {passive:false});
-function onDragMove(e){
-  if(!floatingEl) return;
-  e.preventDefault && e.preventDefault();
-  const t = e.touches ? e.touches[0] : e;
-  floatingEl.style.left = (t.clientX - dragOffX) + 'px';
-  floatingEl.style.top = (t.clientY - dragOffY) + 'px';
-}
-
-document.addEventListener('mouseup', onDragEnd);
-document.addEventListener('touchend', onDragEnd);
-function onDragEnd(e){
-  if(!floatingEl || !dragItem) return;
-  const t = e.changedTouches ? e.changedTouches[0] : e;
-  floatingEl.remove();
-  floatingEl = null;
-
-  // Check if dropped on workspace
-  const wsRect = workspace.getBoundingClientRect();
-  const x = t.clientX - wsRect.left;
-  const y = t.clientY - wsRect.top;
-
-  if(x >= 0 && y >= 0 && x <= wsRect.width && y <= wsRect.height){
-    if(dragSource === 'sidebar'){
-      // Place new element
-      const item = {id: ++idCounter, name: dragItem.name, x, y};
-      workspaceItems.push(item);
-      renderWorkspaceItem(item);
-      tryCombiNearby(item);
-    }
-  }
-
-  dragItem = null;
-  dragSource = null;
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  WORKSPACE ELEMENTS
-// ═══════════════════════════════════════════════════════════════
-
-function renderWorkspaceItem(item){
-  const el = ELEMENTS[item.name];
-  if(!el) return;
-  const div = document.createElement('div');
-  div.className = 'work-elem';
-  div.id = 'ws-' + item.id;
-  div.style.left = (item.x - 50) + 'px';
-  div.style.top = (item.y - 20) + 'px';
-  div.innerHTML = `<span class="emoji">${el.emoji}</span>${item.name}<span class="close" data-id="${item.id}">✕</span>`;
-
-  // Drag workspace items
-  let wsDragging = false;
-  let startX, startY, origX, origY;
-
-  div.addEventListener('mousedown', e => {
-    if(e.target.classList.contains('close')) return;
-    wsDragging = true;
-    const rect = div.getBoundingClientRect();
-    const wsRect = workspace.getBoundingClientRect();
-    startX = e.clientX; startY = e.clientY;
-    origX = rect.left - wsRect.left; origY = rect.top - wsRect.top;
-    div.style.zIndex = 50;
-    e.preventDefault();
-  });
-
-  const moveHandler = e => {
-    if(!wsDragging) return;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-    div.style.left = (origX + dx) + 'px';
-    div.style.top = (origY + dy) + 'px';
-    item.x = origX + dx + 50;
-    item.y = origY + dy + 20;
-  };
-  const upHandler = () => {
-    if(!wsDragging) return;
-    wsDragging = false;
-    div.style.zIndex = 5;
-    tryCombiNearby(item);
-  };
-  document.addEventListener('mousemove', moveHandler);
-  document.addEventListener('mouseup', upHandler);
-
-  // Close button
-  div.querySelector('.close').addEventListener('click', () => {
-    workspaceItems = workspaceItems.filter(i => i.id !== item.id);
-    div.remove();
-  });
-
-  workspace.appendChild(div);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  COMBINATION LOGIC
-// ═══════════════════════════════════════════════════════════════
-
-function tryCombiNearby(item){
-  const DIST = 100;
-  for(const other of workspaceItems){
-    if(other.id === item.id) continue;
-    const dx = item.x - other.x;
-    const dy = item.y - other.y;
-    if(Math.sqrt(dx*dx+dy*dy) < DIST){
-      combine(item, other);
-      return;
-    }
+// ═══════════════════════════════════════════════════════════
+//  STAR BG
+// ═══════════════════════════════════════════════════════════
+const SC=document.getElementById('starCvs'),SX=SC.getContext('2d');
+let stars=[],clines=[];
+function initStars(){
+  const W=SC.width=SC.parentElement.clientWidth,H=SC.height=SC.parentElement.clientHeight;
+  stars=[];clines=[];
+  for(let i=0;i<80;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+0.3,b:Math.random()});
+  for(let i=0;i<stars.length;i++)for(let j=i+1;j<stars.length;j++){
+    const d=Math.hypot(stars[i].x-stars[j].x,stars[i].y-stars[j].y);
+    if(d<140&&Math.random()<0.25)clines.push({a:i,b:j});
   }
 }
+function drawStars(){
+  const W=SC.width,H=SC.height,t=performance.now()*.001;
+  SX.clearRect(0,0,W,H);
+  SX.strokeStyle='rgba(255,255,255,.03)';SX.lineWidth=.7;
+  clines.forEach(l=>{SX.beginPath();SX.moveTo(stars[l.a].x,stars[l.a].y);SX.lineTo(stars[l.b].x,stars[l.b].y);SX.stroke()});
+  stars.forEach(s=>{SX.beginPath();SX.arc(s.x,s.y,s.r,0,Math.PI*2);SX.fillStyle=`rgba(210,215,230,${.15+Math.sin(t*.7+s.b*10)*.12})`;SX.fill()});
+  requestAnimationFrame(drawStars);
+}
+addEventListener('resize',initStars);initStars();drawStars();
 
-function combine(a, b){
-  const key1 = a.name + '+' + b.name;
-  const key2 = b.name + '+' + a.name;
-  const result = RECIPES[key1] || RECIPES[key2];
+// ═══════════════════════════════════════════════════════════
+//  SIDEBAR
+// ═══════════════════════════════════════════════════════════
+const elList=document.getElementById('elList'),srcIn=document.getElementById('srcIn');
+function renderSB(){
+  const q=srcIn.value.toLowerCase();
+  elList.innerHTML='';
+  let sorted=Object.entries(els);
+  if(sortMode==='alpha')sorted.sort((a,b)=>a[0].localeCompare(b[0]));
+  else if(sortMode==='emoji')sorted.sort((a,b)=>(a[1].e||'').localeCompare(b[1].e||''));
+  else sorted.sort((a,b)=>(a[1].t||0)-(b[1].t||0));
+  sorted.forEach(([n,d])=>{
+    if(q&&!n.toLowerCase().includes(q))return;
+    const c=document.createElement('div');
+    c.className='el-chip'+(d.first?' is-first':'');
+    c.innerHTML=`<span class="em">${d.e||'❓'}</span>${n}`;
+    c.addEventListener('mousedown',e=>startDrag(e,n));
+    c.addEventListener('touchstart',e=>{e.preventDefault();startDrag(e,n)},{passive:false});
+    elList.appendChild(c);
+  });
+  document.getElementById('cnt').textContent=Object.keys(els).length;
+}
+srcIn.addEventListener('input',renderSB);
+document.querySelectorAll('.sort-b').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.sort-b').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');sortMode=b.dataset.s;renderSB();
+}));
 
-  if(!result || !ELEMENTS[result]) return;
+// ═══════════════════════════════════════════════════════════
+//  DRAG SYSTEM
+// ═══════════════════════════════════════════════════════════
+const ws=document.getElementById('ws');
+let floatEl=null,dragD=null;
 
-  // Remove both from workspace
-  const divA = document.getElementById('ws-' + a.id);
-  const divB = document.getElementById('ws-' + b.id);
-
-  // Animate them together
-  const midX = (a.x + b.x) / 2;
-  const midY = (a.y + b.y) / 2;
-
-  if(divA) { divA.style.transition = 'all .3s'; divA.style.left = (midX-50)+'px'; divA.style.top = (midY-20)+'px'; divA.style.opacity = '0'; divA.style.transform = 'scale(0.5)'; }
-  if(divB) { divB.style.transition = 'all .3s'; divB.style.left = (midX-50)+'px'; divB.style.top = (midY-20)+'px'; divB.style.opacity = '0'; divB.style.transform = 'scale(0.5)'; }
-
-  setTimeout(() => {
-    if(divA) divA.remove();
-    if(divB) divB.remove();
-    workspaceItems = workspaceItems.filter(i => i.id !== a.id && i.id !== b.id);
-
-    // Create result
-    const newItem = {id: ++idCounter, name: result, x: midX, y: midY};
-    workspaceItems.push(newItem);
-    renderWorkspaceItem(newItem);
-
-    const isNew = !discovered.has(result);
-    discovered.add(result);
-    saveProgress();
-    renderSidebar();
-
-    if(isNew){
-      showDiscovery(result, a.name, b.name);
-      spawnParticles(midX, midY);
-    }
-  }, 300);
+function startDrag(e,name){
+  const t=e.touches?e.touches[0]:e;
+  dragD={name,src:'sb'};
+  const d=els[name];
+  floatEl=document.createElement('div');
+  floatEl.className='w-el drag';
+  floatEl.style.cssText='position:fixed;z-index:1000;pointer-events:none;transition:none';
+  floatEl.innerHTML=`<span class="em">${d.e||'❓'}</span>${name}`;
+  document.body.appendChild(floatEl);
+  const r=floatEl.getBoundingClientRect();
+  floatEl.style.left=(t.clientX-r.width/2)+'px';
+  floatEl.style.top=(t.clientY-r.height/2)+'px';
+}
+document.addEventListener('mousemove',mv);document.addEventListener('touchmove',mv,{passive:false});
+function mv(e){if(!floatEl)return;e.preventDefault?.();const t=e.touches?e.touches[0]:e;const r=floatEl.getBoundingClientRect();floatEl.style.left=(t.clientX-r.width/2)+'px';floatEl.style.top=(t.clientY-r.height/2)+'px'}
+document.addEventListener('mouseup',drop);document.addEventListener('touchend',drop);
+function drop(e){
+  if(!floatEl||!dragD)return;
+  const t=e.changedTouches?e.changedTouches[0]:e;
+  floatEl.remove();floatEl=null;
+  const wr=ws.getBoundingClientRect();
+  const x=t.clientX-wr.left,y=t.clientY-wr.top;
+  if(x>=0&&y>=0&&x<=wr.width&&y<=wr.height){
+    const it={id:++idC,name:dragD.name,x,y};
+    workItems.push(it);renderWI(it);tryCombo(it);
+  }
+  dragD=null;
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  DISCOVERY ANIMATION
-// ═══════════════════════════════════════════════════════════════
-const discOverlay = document.getElementById('discOverlay');
+// ═══════════════════════════════════════════════════════════
+//  WORKSPACE ITEMS
+// ═══════════════════════════════════════════════════════════
+function renderWI(item,isNew=false,isFirst=false){
+  const d=els[item.name];if(!d)return;
+  const div=document.createElement('div');
+  div.className='w-el'+(isNew?' new-item':'');
+  div.id='wi-'+item.id;
+  div.style.left=(item.x-45)+'px';div.style.top=(item.y-16)+'px';
+  div.innerHTML=`<span class="em">${d.e||'❓'}</span>${item.name}`;
 
-function showDiscovery(name, from1, from2){
-  const el = ELEMENTS[name];
-  document.getElementById('discEmoji').textContent = el.emoji;
-  document.getElementById('discName').textContent = name;
-  document.getElementById('discSub').textContent = `New element discovered!`;
-  document.getElementById('discRecipe').textContent = `${from1} + ${from2} = ${name}`;
-  discOverlay.classList.add('show');
+  // Sparkle ring for new items
+  if(isNew){
+    const ring=document.createElement('div');
+    ring.className='sparkle-ring'+(isFirst?' gold':'');
+    div.appendChild(ring);
+    setTimeout(()=>ring.remove(),700);
+    // Mini particles behind the element
+    setTimeout(()=>spawnMiniParticles(item.x,item.y,isFirst),50);
+  }
+  if(isFirst){
+    const badge=document.createElement('div');
+    badge.className='first-disc-badge';
+    badge.textContent='✦ FIRST DISCOVERY ✦';
+    div.appendChild(badge);
+    setTimeout(()=>badge.remove(),3500);
+  }
 
-  setTimeout(() => {
-    discOverlay.classList.remove('show');
-  }, 1800);
-
-  discOverlay.addEventListener('click', () => {
-    discOverlay.classList.remove('show');
-  }, {once:true});
+  let dragging=false,sx,sy,ox,oy;
+  function sd(e){e.preventDefault();e.stopPropagation();dragging=true;div.classList.add('drag');const t=e.touches?e.touches[0]:e;const r=div.getBoundingClientRect();const wr=ws.getBoundingClientRect();sx=t.clientX;sy=t.clientY;ox=r.left-wr.left;oy=r.top-wr.top}
+  function md(e){if(!dragging)return;const t=e.touches?e.touches[0]:e;div.style.left=(ox+t.clientX-sx)+'px';div.style.top=(oy+t.clientY-sy)+'px';item.x=ox+t.clientX-sx+45;item.y=oy+t.clientY-sy+16}
+  function ed(){if(!dragging)return;dragging=false;div.classList.remove('drag');tryCombo(item)}
+  div.addEventListener('mousedown',sd);div.addEventListener('touchstart',sd,{passive:false});
+  document.addEventListener('mousemove',md);document.addEventListener('touchmove',md,{passive:false});
+  document.addEventListener('mouseup',ed);document.addEventListener('touchend',ed);
+  div.addEventListener('dblclick',()=>{workItems=workItems.filter(i=>i.id!==item.id);div.remove()});
+  ws.appendChild(div);
 }
 
-function spawnParticles(cx, cy){
-  const wsRect = workspace.getBoundingClientRect();
-  const colors = ['#f59e0b','#ef4444','#8b5cf6','#10b981','#3b82f6','#f472b6'];
-  for(let i = 0; i < 20; i++){
-    const p = document.createElement('div');
-    p.className = 'particle';
-    p.style.left = (wsRect.left + cx) + 'px';
-    p.style.top = (wsRect.top + cy) + 'px';
-    p.style.background = colors[Math.floor(Math.random()*colors.length)];
-    document.body.appendChild(p);
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 60 + Math.random() * 100;
-    const tx = Math.cos(angle) * dist;
-    const ty = Math.sin(angle) * dist;
+function spawnMiniParticles(cx,cy,gold){
+  const wr=ws.getBoundingClientRect();
+  const cols=gold?['#fbbf24','#f59e0b','#fcd34d','#fff']:['#7dd3fc','#a78bfa','#4ade80','#fff'];
+  for(let i=0;i<(gold?14:8);i++){
+    const p=document.createElement('div');
+    const a=Math.random()*Math.PI*2,d=25+Math.random()*40;
+    p.style.cssText=`position:absolute;width:4px;height:4px;border-radius:50%;pointer-events:none;z-index:6;left:${cx}px;top:${cy}px;background:${cols[i%cols.length]}`;
+    ws.appendChild(p);
     p.animate([
-      {transform:'translate(0,0) scale(1)', opacity:1},
-      {transform:`translate(${tx}px,${ty}px) scale(0)`, opacity:0}
-    ], {duration: 600 + Math.random()*400, easing:'cubic-bezier(.25,.46,.45,.94)'});
-    setTimeout(() => p.remove(), 1100);
+      {transform:'translate(-2px,-2px) scale(1)',opacity:.8},
+      {transform:`translate(${Math.cos(a)*d-2}px,${Math.sin(a)*d-2}px) scale(0)`,opacity:0}
+    ],{duration:500+Math.random()*300,easing:'ease-out'});
+    setTimeout(()=>p.remove(),900);
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  CLEAR WORKSPACE
-// ═══════════════════════════════════════════════════════════════
-document.getElementById('clearWs').addEventListener('click', () => {
-  workspace.querySelectorAll('.work-elem').forEach(el => el.remove());
-  workspaceItems = [];
-});
+// ═══════════════════════════════════════════════════════════
+//  COMBINE
+// ═══════════════════════════════════════════════════════════
+const CDIST=85;
+async function tryCombo(item){
+  for(const o of workItems){
+    if(o.id===item.id)continue;
+    if(Math.hypot(item.x-o.x,item.y-o.y)<CDIST){await combine(item,o);return}
+  }
+}
+async function combine(a,b){
+  if(pending)return;pending=true;
+  const dA=document.getElementById('wi-'+a.id),dB=document.getElementById('wi-'+b.id);
+  const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+  if(dA){dA.style.transition='all .2s';dA.style.left=(mx-45)+'px';dA.style.top=(my-16)+'px';dA.style.opacity='.4'}
+  if(dB){dB.style.transition='all .2s';dB.style.left=(mx-45)+'px';dB.style.top=(my-16)+'px';dB.style.opacity='.4'}
+  
+  const ld=document.getElementById('loader');
+  ld.style.left=(mx-9)+'px';ld.style.top=(my-28)+'px';ld.style.position='absolute';ld.classList.add('on');
 
-// Mobile menu
-document.getElementById('menuToggle').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('open');
-});
+  const k1=a.name+'+'+b.name,k2=b.name+'+'+a.name;
+  let rn=recipes[k1]||recipes[k2],re=null,isNew=false,isFirst=false;
+
+  if(!rn){
+    try{const r=await callAI(a.name,b.name);rn=r.name;re=r.emoji}
+    catch(err){console.error(err);rn=a.name+' '+b.name;re='❓'}
+    recipes[k1]=rn;
+    if(!els[rn]){
+      isNew=true;
+      const count=Object.keys(els).length;
+      // Check if this is a First Discovery (milestone unlock)
+      const milestone=MILESTONES.find(m=>count+1===m.need);
+      if(milestone)isFirst=true;
+      els[rn]={e:re||'❓',t:count,first:isFirst};
+      log.push({n:rn,e:re||'❓',f1:a.name,f2:b.name,at:Date.now(),first:isFirst});
+    }
+  }
+  if(!re&&els[rn])re=els[rn].e;
+
+  ld.classList.remove('on');
+  if(dA)dA.remove();if(dB)dB.remove();
+  workItems=workItems.filter(i=>i.id!==a.id&&i.id!==b.id);
+
+  const ni={id:++idC,name:rn,x:mx,y:my};
+  workItems.push(ni);
+  renderWI(ni,isNew,isFirst);
+  if(isNew){renderSB();checkMilestones()}
+  save(curSave);
+  pending=false;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MISTRAL AI
+// ═══════════════════════════════════════════════════════════
+async function callAI(e1,e2){
+  const r=await fetch('https://api.mistral.ai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+MK},
+    body:JSON.stringify({
+      model:'mistral-small-latest',
+      messages:[{role:'user',content:`Element combination game. Combine "${e1}" + "${e2}". Reply ONLY with JSON: {"name":"result","emoji":"🔥"}
+Rules:
+- Result must logically/creatively follow from inputs
+- 1-3 words max
+- Be creative, funny, surprising
+- Allow ANYTHING: life, death, drugs, memes, chaos, philosophy, absurdity
+- Same element + same = bigger/more intense version
+- Think laterally: Water+Fire=Steam, Life+Plant=Weed, Smoke+Roll=Joint, Earth+Life=Human
+- Single relevant emoji
+- ONLY output JSON, nothing else`}],
+      max_tokens:60,temperature:0.8,
+    })
+  });
+  if(!r.ok)throw new Error(r.status);
+  const d=await r.json();
+  const txt=d.choices[0].message.content.trim();
+  try{
+    const m=txt.match(/\{[\s\S]*?\}/);
+    if(m){const p=JSON.parse(m[0]);return{name:(p.name||'Thing').substring(0,30),emoji:p.emoji||'❓'}}
+  }catch(e){}
+  return{name:e1+' '+e2,emoji:'❓'};
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MILESTONES
+// ═══════════════════════════════════════════════════════════
+function checkMilestones(){
+  const count=Object.keys(els).length;
+  prevMilestone=MILESTONES.filter(m=>count>=m.need).length;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  WORKSPACE BTNS
+// ═══════════════════════════════════════════════════════════
+document.getElementById('clearBtn').addEventListener('click',()=>{ws.querySelectorAll('.w-el').forEach(e=>e.remove());workItems=[]});
+document.getElementById('undoBtn').addEventListener('click',()=>{if(!workItems.length)return;const l=workItems.pop();const d=document.getElementById('wi-'+l.id);if(d)d.remove()});
+
+// ═══════════════════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════════════════
+const moBg=document.getElementById('moBg'),moBody=document.getElementById('moBody'),moTitle=document.getElementById('moTitle');
+document.getElementById('moX').addEventListener('click',()=>moBg.classList.remove('open'));
+moBg.addEventListener('click',e=>{if(e.target===moBg)moBg.classList.remove('open')});
+
+document.getElementById('menuBtn').addEventListener('click',()=>{moTitle.textContent='Saves';renderSaves();moBg.classList.add('open')});
+document.getElementById('milesBtn').addEventListener('click',()=>{moTitle.textContent='Milestones';renderMiles();moBg.classList.add('open')});
+document.getElementById('logBtn').addEventListener('click',()=>{moTitle.textContent='Discovery Log';renderLog();moBg.classList.add('open')});
+
+function renderSaves(){
+  let h='';
+  for(let i=0;i<3;i++){
+    let meta='Empty slot';
+    const raw=localStorage.getItem('ef3_'+i);
+    if(raw){try{const d=JSON.parse(raw);meta=Object.keys(d.els||{}).length+' items · '+new Date(d.at||0).toLocaleDateString()}catch(e){}}
+    h+=`<div class="sv-slot${i===curSave?' cur':''}">
+      <div class="sv-info"><div class="sv-name">${i===curSave?'▸ ':''} Save ${i+1}</div><div class="sv-meta">${meta}</div></div>
+      <div class="sv-acts">
+        <div class="sv-act" onclick="doLoad(${i})">Load</div>
+        <div class="sv-act" onclick="doSave(${i})">Save</div>
+        <div class="sv-act del" onclick="doReset(${i})">Reset</div>
+      </div>
+    </div>`;
+  }
+  moBody.innerHTML=h;
+}
+window.doLoad=i=>{curSave=i;load(i);ws.querySelectorAll('.w-el').forEach(e=>e.remove());renderSaves()};
+window.doSave=i=>{curSave=i;save(i);renderSaves()};
+window.doReset=i=>{
+  if(!confirm('Reset Save '+(i+1)+'?'))return;
+  localStorage.removeItem('ef3_'+i);
+  if(i===curSave){reset();ws.querySelectorAll('.w-el').forEach(e=>e.remove());renderSB()}
+  renderSaves();
+};
+
+function renderMiles(){
+  const count=Object.keys(els).length;
+  let h='<div style="font-size:.72rem;color:var(--dim);margin-bottom:12px">Unlock milestones by discovering more elements. You have <strong style="color:var(--text)">'+count+'</strong> elements.</div>';
+  MILESTONES.forEach(m=>{
+    const done=count>=m.need;
+    h+=`<div class="mile${done?'':' locked'}">
+      <div class="mico">${m.icon}</div>
+      <div class="mtxt"><div class="mn">${m.name}</div><div class="md">${m.desc} (${m.need} items)</div></div>
+      ${done?'<div class="check">✓</div>':'<div style="margin-left:auto;font-size:.65rem;color:var(--dim)">'+(m.need-count)+' to go</div>'}
+    </div>`;
+  });
+  moBody.innerHTML=h;
+}
+
+function renderLog(){
+  if(!log.length){moBody.innerHTML='<div style="text-align:center;padding:30px;color:var(--dim)">No discoveries yet. Start combining!</div>';return}
+  let h='';
+  [...log].reverse().forEach(d=>{
+    h+=`<div class="dl-item">
+      <span class="em">${d.e}</span>
+      <span class="nm">${d.n}${d.first?' <span style="color:var(--gold);font-size:.5rem">✦ FIRST</span>':''}</span>
+      <span class="rc">${d.f1} + ${d.f2}</span>
+    </div>`;
+  });
+  moBody.innerHTML=h;
+}
+
+// INIT
+load(0);renderSB();
 </script>
 </body>
 </html>
