@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Button</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  font-family:'DM Sans',sans-serif;
+  transition:background 1s ease;background:#0f0f15;color:#fff;
+  overflow:hidden;position:relative;
+}
+.counter{
+  position:fixed;top:18px;left:50%;transform:translateX(-50%);
+  font-size:.65rem;font-weight:600;color:rgba(255,255,255,.28);
+  letter-spacing:1.5px;text-transform:uppercase;z-index:10;
+  display:flex;align-items:center;gap:8px;
+  background:rgba(0,0,0,.3);backdrop-filter:blur(8px);
+  padding:7px 18px;border-radius:100px;border:1px solid rgba(255,255,255,.05);
+}
+.counter .num{font-size:1.05rem;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;transition:transform .12s}
+.counter .num.bump{transform:scale(1.35)}
+
+.the-button{
+  width:clamp(150px,30vw,200px);height:clamp(150px,30vw,200px);
+  border-radius:50%;border:none;cursor:pointer;
+  background:radial-gradient(circle at 35% 32%,#ff4444,#cc0000,#880000);
+  box-shadow:0 8px 0 #660000,0 14px 40px rgba(200,0,0,.35),inset 0 -6px 14px rgba(0,0,0,.35),inset 0 6px 14px rgba(255,255,255,.12);
+  transition:transform .05s,box-shadow .05s;position:relative;z-index:5;
+  -webkit-tap-highlight-color:transparent;
+}
+.the-button:hover{box-shadow:0 8px 0 #660000,0 18px 55px rgba(255,0,0,.45),inset 0 -6px 14px rgba(0,0,0,.35),inset 0 6px 14px rgba(255,255,255,.18)}
+.the-button:active{transform:translateY(6px);box-shadow:0 2px 0 #660000,0 4px 12px rgba(200,0,0,.25),inset 0 -3px 8px rgba(0,0,0,.3),inset 0 3px 8px rgba(255,255,255,.08)}
+.the-button::after{content:'';position:absolute;top:13%;left:22%;width:28%;height:16%;border-radius:50%;background:radial-gradient(rgba(255,255,255,.3),transparent);pointer-events:none}
+
+.sub{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);font-size:.62rem;color:rgba(255,255,255,.15);letter-spacing:1px;text-transform:uppercase;z-index:3}
+
+/* Float text */
+.ft{
+  position:fixed;left:50%;top:55%;transform:translate(-50%,0);
+  font-size:clamp(.95rem,3vw,1.5rem);font-weight:700;
+  text-align:center;max-width:80vw;pointer-events:none;z-index:8;
+  line-height:1.4;text-shadow:0 2px 20px rgba(0,0,0,.5);
+  opacity:0;
+}
+
+/* Emoji */
+.ef{position:fixed;pointer-events:none;z-index:7;font-size:clamp(1.5rem,4vw,2.2rem)}
+
+/* Shake */
+body.shake{animation:shk .12s linear}
+@keyframes shk{0%,100%{transform:translate(0)}25%{transform:translate(-3px,2px)}50%{transform:translate(3px,-2px)}75%{transform:translate(-2px,3px)}}
+
+/* Flash */
+.sf{position:fixed;inset:0;pointer-events:none;z-index:15;opacity:0;transition:opacity .06s}
+
+/* Milestone */
+.ms{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+  font-size:clamp(1.8rem,5vw,3.5rem);font-weight:800;
+  text-align:center;z-index:20;pointer-events:none;
+  text-shadow:0 0 40px currentColor;
+  opacity:0;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s;
+}
+.ms.show{transform:translate(-50%,-50%) scale(1);opacity:1}
+
+#pcvs{position:fixed;inset:0;pointer-events:none;z-index:6}
+</style>
+</head>
+<body>
+
+<div class="counter">presses <span class="num" id="cnt">0</span></div>
+<button class="the-button" id="btn"></button>
+<div class="sub" id="sub">press it. see what happens.</div>
+<canvas id="pcvs"></canvas>
+<div class="sf" id="flash"></div>
+<div class="ms" id="ms"></div>
+
+<script>
+const MK='zT2Mc6bjDN9t5Af496m2QCZtIABLRUYO';
+const btn=document.getElementById('btn');
+const cntEl=document.getElementById('cnt');
+const subEl=document.getElementById('sub');
+const flashEl=document.getElementById('flash');
+const msEl=document.getElementById('ms');
+const cv=document.getElementById('pcvs'),cx=cv.getContext('2d');
+let W,H;function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight}
+resize();addEventListener('resize',resize);
+
+let count=parseInt(localStorage.getItem('btn_c')||'0');
+let particles=[];
+let usedLocal=new Set();
+let aiFetching=false;
+let aiQueue=[]; // prefetched AI reactions ready to use
+cntEl.textContent=count;
+
+// ═══════════════════════════════════════════════════
+//  80 INSTANT REACTIONS (no API needed)
+// ═══════════════════════════════════════════════════
+const LOCAL=[
+{t:"Nothing happened. Or did it?",bg:"#0f0f15",e:"🤔"},
+{t:"The button felt that.",bg:"#1a0a2e",e:"😢"},
+{t:"Somewhere, a philosopher just woke up screaming.",bg:"#1a1a2e",e:"🧠"},
+{t:"You pressed it. But who pressed YOU into existence?",bg:"#0d1b2a",e:"👁️"},
+{t:"That press echoed in 14 dimensions.",bg:"#0a001a",e:"🌌"},
+{t:"A butterfly in Tokyo just changed course.",bg:"#0f1a0f",e:"🦋"},
+{t:"Your ancestors are watching. They're confused.",bg:"#1a1a0a",e:"👻"},
+{t:"The void stared back. It blinked first.",bg:"#000005",e:"⚫"},
+{t:"The simulation noticed.",bg:"#000010",e:"🖥️"},
+{t:"God saw that. He shrugged.",bg:"#1a1a10",e:"⛅"},
+{t:"Your FBI agent just laughed.",bg:"#0a1a0a",e:"🕵️"},
+{t:"A duck somewhere quacked in approval.",bg:"#1a1a00",e:"🦆"},
+{t:"That's the most productive thing you've done today.",bg:"#0f1a1a",e:"📊"},
+{t:"Button pressed. Serotonin deployed.",bg:"#1a0a20",e:"💊"},
+{t:"The button liked that. A lot.",bg:"#2a0a0a",e:"❤️"},
+{t:"69,420 people just felt a disturbance.",bg:"#1a001a",e:"💀"},
+{t:"Jeff Bezos just lost $1 because you pressed this.",bg:"#0a1a0a",e:"💸"},
+{t:"A new color was invented. Nobody saw it.",bg:"#0a0a1a",e:"🎨"},
+{t:"The button forgives you. This time.",bg:"#1a0808",e:"🙏"},
+{t:"You've been pressing buttons your whole life. This one pressed back.",bg:"#0d0d1a",e:"🔄"},
+{t:"In a parallel universe, the button pressed you.",bg:"#0a001a",e:"🌀"},
+{t:"Speed: 0.003 seconds. New record? No. Not even close.",bg:"#0f1510",e:"⏱️"},
+{t:"The button is beginning to feel things.",bg:"#1a0a1a",e:"🥺"},
+{t:"Your click was mass: 0.0001g. The button felt the weight of the universe.",bg:"#08080f",e:"⚖️"},
+{t:"Bro it's just a button calm down.",bg:"#0f0f15",e:"😐"},
+{t:"Plot twist: the button was the friends we made along the way.",bg:"#0d1520",e:"🫂"},
+{t:"404: Reaction not found. Just kidding.",bg:"#0a0a0a",e:"💻"},
+{t:"You unlocked: nothing. But spiritually? Everything.",bg:"#10081a",e:"✨"},
+{t:"A random NPC in a video game just glitched because of this.",bg:"#0a1a15",e:"🎮"},
+{t:"The internet felt that one.",bg:"#0f0a15",e:"🌐"},
+{t:"This press was sponsored by existential dread.",bg:"#0a0a10",e:"💀"},
+{t:"Fun fact: you've now wasted exactly this much time.",bg:"#15150a",e:"⏰"},
+{t:"The button will remember this.",bg:"#1a0505",e:"📝"},
+{t:"Every time you press, an angel gets confused.",bg:"#15151a",e:"👼"},
+{t:"Your therapist would have thoughts about this.",bg:"#0f0f1a",e:"🛋️"},
+{t:"Dopamine: +0.001%. Worth it.",bg:"#0a151a",e:"🧪"},
+{t:"The atoms in the button rearranged. Imperceptibly.",bg:"#08080f",e:"⚛️"},
+{t:"A tree grew a new leaf somewhere. Probably unrelated.",bg:"#0a1a0a",e:"🌳"},
+{t:"The button respects your persistence.",bg:"#15100a",e:"💪"},
+{t:"Loading... just kidding, nothing loads here.",bg:"#0a0a0f",e:"⌛"},
+{t:"You and 0 other people are pressing this button right now.",bg:"#0f0f15",e:"👤"},
+{t:"Click. Clack. Click. This is your life now.",bg:"#10080f",e:"🔁"},
+{t:"The button gained 1 XP. It's now level 2.",bg:"#0a0f1a",e:"⬆️"},
+{t:"Breaking News: Person presses button. World unchanged.",bg:"#1a0a0a",e:"📰"},
+{t:"That was press #" + "???. Nobody is counting. Except us.",bg:"#0f0a0f",e:"🔢"},
+{t:"The button has achieved sentience. It chose not to react.",bg:"#08080a",e:"🤖"},
+{t:"Your horoscope: You will press a button today.",bg:"#1a0f1a",e:"♈"},
+{t:"If a button is pressed and no one cares, does it make a sound?",bg:"#0a0a0f",e:"🔇"},
+{t:"The button thanks you for your service.",bg:"#0a150a",e:"🎖️"},
+{t:"A parallel you just decided NOT to press it. Coward.",bg:"#0f0a1a",e:"🐔"},
+{t:"CRITICAL HIT! The button takes 0 damage.",bg:"#1a0a0a",e:"⚔️"},
+{t:"You pressed it with the force of 1000 mild inconveniences.",bg:"#15100a",e:"💥"},
+{t:"The button is concerned about your dedication.",bg:"#0a0f15",e:"😟"},
+{t:"Error: too much swag detected.",bg:"#1a0a1a",e:"😎"},
+{t:"The matrix glitched. Just a little.",bg:"#001a00",e:"🟢"},
+{t:"Someone in 2847 just studied this press in history class.",bg:"#0a0a1a",e:"📚"},
+{t:"This button has more purpose than most meetings.",bg:"#0f1510",e:"💼"},
+{t:"Your mouse/finger consented to this. Probably.",bg:"#15100f",e:"🖱️"},
+{t:"POV: you're procrastinating and this is rock bottom.",bg:"#0f0a0a",e:"📉"},
+{t:"The button evaluated your click. Grade: B+",bg:"#0f150a",e:"📝"},
+{t:"A very small explosion happened inside the button. You didn't hear it.",bg:"#1a0a00",e:"🧨"},
+{t:"The button whispers: again.",bg:"#0a0008",e:"🌙"},
+{t:"Your press has been forwarded to the Department of Pressing Buttons.",bg:"#0a0f15",e:"🏛️"},
+{t:"That click burned 0.0002 calories. Keep going champ.",bg:"#0f150a",e:"🏋️"},
+{t:"The button just tweeted about this. 3 likes.",bg:"#0a0a1a",e:"🐦"},
+{t:"A cat somewhere just knocked something off a table in solidarity.",bg:"#15100a",e:"🐱"},
+{t:"You pressed with intention. The universe noticed. It didn't care.",bg:"#0a0a0f",e:"🌌"},
+{t:"The button has added you to its LinkedIn network.",bg:"#0a0f1a",e:"💼"},
+{t:"In the multiverse of buttons, this one is mid.",bg:"#0f0f0f",e:"😬"},
+{t:"Your press was converted to 0.0 Bitcoin.",bg:"#1a1a00",e:"₿"},
+{t:"Achievement: Press button 0 times. Wait...",bg:"#0a0a0a",e:"🏆"},
+{t:"The button is now emotionally attached to you.",bg:"#1a0a15",e:"💕"},
+{t:"Scientists hate this one weird button.",bg:"#0f150f",e:"🔬"},
+{t:"You've angered the Button Gods. They're pretty chill about it.",bg:"#1a1a0a",e:"⚡"},
+{t:"The button is writing a memoir about your clicks.",bg:"#0f0a10",e:"📖"},
+{t:"Local button pressed; morale improves slightly.",bg:"#0a150a",e:"📰"},
+{t:"1 button press = 1 thought. You just sent 1 thought.",bg:"#0f0a1a",e:"💭"},
+{t:"The ghost of buttons past approves.",bg:"#0a0a10",e:"👻"},
+{t:"This press was mid. The next one might be fire though.",bg:"#0f0f0f",e:"🔥"},
+{t:"A very tiny firework went off. In your brain. Maybe.",bg:"#0a001a",e:"🎆"},
+{t:"The button rates this press 7/10. Room for improvement.",bg:"#0f100a",e:"⭐"},
+];
+
+// ═══════════════════════════════════════════════════
+//  AI REACTION GENERATOR (prefetch system)
+// ═══════════════════════════════════════════════════
+async function fetchAIReaction(){
+  if(aiFetching)return;
+  aiFetching=true;
+  try{
+    const r=await fetch('https://api.mistral.ai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+MK},
+      body:JSON.stringify({
+        model:'mistral-small-latest',
+        messages:[{role:'user',content:`You are "The Button" — a mysterious red button on a website. Someone just pressed you for the ${count}th time. Generate a reaction.
+
+Reply ONLY with JSON: {"text":"your reaction","emoji":"🔥","bg":"#0f0a1a"}
+
+Rules:
+- text: 1-2 sentences. Be wildly creative. Mix between: existential dread, absurdist humor, 4th wall breaks, fake achievements, philosophical one-liners, surreal observations, pop culture references, fake error messages, passive aggressive comments, cosmic implications, gen-z humor, dark humor, wholesome moments, fake news headlines, self-aware button thoughts, quantum physics jokes, timeline references, simulation theory, therapy-speak, corporate jargon used wrong
+- The reaction should feel unique and surprising every single time
+- Sometimes be deep. Sometimes be stupid. Sometimes both.
+- Reference the press count (${count}) occasionally for personalization
+- emoji: single emoji matching the vibe
+- bg: dark hex color matching the mood (keep it dark, like #0a0f1a range)
+- ONLY output JSON`}],
+        max_tokens:120,temperature:1.0,
+      })
+    });
+    if(!r.ok)throw new Error(r.status);
+    const d=await r.json();
+    const txt=d.choices[0].message.content.trim();
+    const m=txt.match(/\{[\s\S]*?\}/);
+    if(m){
+      const p=JSON.parse(m[0]);
+      aiQueue.push({
+        t:p.text||'The button experienced a brief existential crisis.',
+        bg:p.bg||'#0f0f15',
+        e:p.emoji||'✨'
+      });
+    }
+  }catch(e){console.error('AI fetch error:',e)}
+  aiFetching=false;
+}
+
+// Prefetch 2 reactions on load
+fetchAIReaction();
+setTimeout(fetchAIReaction,2000);
+
+// ═══════════════════════════════════════════════════
+//  GET NEXT REACTION (local pool → AI queue → fallback)
+// ═══════════════════════════════════════════════════
+function getReaction(){
+  // If AI queue has something, use it (50% chance after first 30 presses)
+  if(aiQueue.length>0&&(count>30||usedLocal.size>=LOCAL.length*0.7)){
+    const r=aiQueue.shift();
+    // Prefetch next
+    fetchAIReaction();
+    return r;
+  }
+  
+  // Use local reactions
+  let available=[];
+  for(let i=0;i<LOCAL.length;i++){
+    if(!usedLocal.has(i))available.push(i);
+  }
+  // If all used, reset pool
+  if(available.length===0){
+    usedLocal.clear();
+    available=LOCAL.map((_,i)=>i);
+  }
+  const idx=available[Math.floor(Math.random()*available.length)];
+  usedLocal.add(idx);
+  
+  // Always try to prefetch more AI reactions
+  if(aiQueue.length<3)fetchAIReaction();
+  
+  return LOCAL[idx];
+}
+
+// ═══════════════════════════════════════════════════
+//  MILESTONES
+// ═══════════════════════════════════════════════════
+const MILES={
+  1:"First press. The journey begins.",
+  10:"Double digits. You're committed.",
+  25:"25 presses. This is a lifestyle now.",
+  42:"42 — The Answer to Everything.",
+  50:"Half a century of presses.",
+  69:"Nice.",
+  100:"💯 ONE HUNDRED 💯",
+  123:"1-2-3. Counting is fun.",
+  150:"150. The button is impressed.",
+  200:"200. This is becoming concerning.",
+  250:"Quarter thousand. Seek help? Nah.",
+  300:"300 — THIS. IS. BUTTON.",
+  365:"A press for every day of the year.",
+  404:"Error 404: Life not found.",
+  420:"Blaze it. 🌿",
+  500:"HALF A THOUSAND PRESSES.",
+  666:"The button has opened a portal. 😈",
+  777:"Lucky sevens. Nothing happened.",
+  1000:"🏆 ONE THOUSAND. You legend.",
+  1234:"1234. The password of champions.",
+  1337:"L33T BUTTON HACKER",
+  2000:"Y2K: The Button Millennium Bug.",
+  2500:"2,500. You could've learned piano.",
+  5000:"FIVE THOUSAND. Transcendence achieved.",
+  10000:"10,000 PRESSES. YOU ARE THE BUTTON.",
+};
+
+// ═══════════════════════════════════════════════════
+//  BUTTON PRESS
+// ═══════════════════════════════════════════════════
+btn.addEventListener('click',press);
+
+function press(){
+  count++;
+  localStorage.setItem('btn_c',count);
+  cntEl.textContent=count;
+  
+  // Counter bump
+  cntEl.classList.add('bump');
+  setTimeout(()=>cntEl.classList.remove('bump'),150);
+  
+  // Check milestone
+  if(MILES[count]){
+    showMilestone(MILES[count]);
+  }
+  
+  // Get reaction
+  const r=getReaction();
+  
+  // Background color
+  document.body.style.background=r.bg;
+  
+  // Floating text
+  showFloatText(r.t);
+  
+  // Emoji burst
+  burstEmoji(r.e);
+  
+  // Particles
+  burstParticles(r.bg);
+  
+  // Screen shake
+  document.body.classList.remove('shake');
+  void document.body.offsetWidth;
+  document.body.classList.add('shake');
+  
+  // Flash
+  flashEl.style.background=getFlashColor(r.bg);
+  flashEl.style.opacity='0.15';
+  setTimeout(()=>flashEl.style.opacity='0',80);
+  
+  // Sub text
+  const subs=["press it again","do it","once more","keep going","again","why stop now","more","you know you want to","go on","🔴","...", "again?","tap tap tap"];
+  subEl.textContent=subs[Math.floor(Math.random()*subs.length)];
+}
+
+// ═══════════════════════════════════════════════════
+//  VISUAL EFFECTS
+// ═══════════════════════════════════════════════════
+function showFloatText(text){
+  // Remove old
+  document.querySelectorAll('.ft').forEach(e=>{if(parseFloat(getComputedStyle(e).opacity)<0.1)e.remove()});
+  
+  const el=document.createElement('div');
+  el.className='ft';
+  el.textContent=text;
+  el.style.top=(45+Math.random()*15)+'%';
+  document.body.appendChild(el);
+  
+  el.animate([
+    {opacity:0,transform:'translate(-50%,20px)'},
+    {opacity:1,transform:'translate(-50%,0)',offset:.1},
+    {opacity:1,transform:'translate(-50%,0)',offset:.7},
+    {opacity:0,transform:'translate(-50%,-30px)'}
+  ],{duration:3500,easing:'ease-out'});
+  
+  setTimeout(()=>el.remove(),3600);
+}
+
+function burstEmoji(emoji){
+  const num=5+Math.floor(Math.random()*4);
+  for(let i=0;i<num;i++){
+    const el=document.createElement('div');
+    el.className='ef';
+    el.textContent=emoji;
+    el.style.left=(30+Math.random()*40)+'%';
+    el.style.top=(35+Math.random()*30)+'%';
+    document.body.appendChild(el);
+    
+    const angle=-Math.PI/2+(Math.random()-0.5)*2;
+    const dist=80+Math.random()*150;
+    const tx=Math.cos(angle)*dist;
+    const ty=Math.sin(angle)*dist;
+    
+    el.animate([
+      {opacity:1,transform:'translate(0,0) scale(1) rotate(0deg)'},
+      {opacity:0,transform:`translate(${tx}px,${ty}px) scale(0.3) rotate(${(Math.random()-0.5)*180}deg)`}
+    ],{duration:1000+Math.random()*500,easing:'cubic-bezier(.25,.46,.45,.94)'});
+    
+    setTimeout(()=>el.remove(),1600);
+  }
+}
+
+function burstParticles(bg){
+  const btnRect=btn.getBoundingClientRect();
+  const cx=btnRect.left+btnRect.width/2;
+  const cy=btnRect.top+btnRect.height/2;
+  const colors=['#ff4444','#ff6666','#ff8888','#ffaaaa','#ffffff','#ff0044'];
+  
+  for(let i=0;i<20;i++){
+    const a=Math.random()*Math.PI*2;
+    const speed=2+Math.random()*5;
+    particles.push({
+      x:cx,y:cy,
+      vx:Math.cos(a)*speed,vy:Math.sin(a)*speed-2,
+      life:1,color:colors[Math.floor(Math.random()*colors.length)],
+      size:2+Math.random()*3,grav:true
+    });
+  }
+}
+
+function getFlashColor(bg){
+  // Make flash slightly lighter version of bg
+  return 'rgba(255,255,255,0.3)';
+}
+
+function showMilestone(text){
+  msEl.textContent=text;
+  msEl.classList.add('show');
+  // Extra particle burst
+  for(let i=0;i<30;i++){
+    const a=Math.random()*Math.PI*2;
+    const speed=3+Math.random()*6;
+    particles.push({
+      x:W/2,y:H/2,
+      vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,
+      life:1.5,color:['#fbbf24','#f59e0b','#fcd34d','#fff','#ff4444'][i%5],
+      size:3+Math.random()*4,grav:false
+    });
+  }
+  setTimeout(()=>msEl.classList.remove('show'),2500);
+}
+
+// ═══════════════════════════════════════════════════
+//  PARTICLE SYSTEM
+// ═══════════════════════════════════════════════════
+function updateParticles(){
+  cx.clearRect(0,0,W,H);
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.grav)p.vy+=0.12;
+    p.vx*=0.99;
+    p.life-=0.02;
+    if(p.life<=0){particles.splice(i,1);continue}
+    
+    cx.globalAlpha=Math.min(1,p.life);
+    cx.beginPath();cx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);
+    cx.fillStyle=p.color;
+    cx.shadowColor=p.color;cx.shadowBlur=6;
+    cx.fill();cx.shadowBlur=0;
+  }
+  cx.globalAlpha=1;
+  requestAnimationFrame(updateParticles);
+}
+updateParticles();
+</script>
+</body>
+</html>
