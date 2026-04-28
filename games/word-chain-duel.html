@@ -4,178 +4,109 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Word Chain Duel</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#08080f;--panel:#0f0f18;--border:#1a1a2a;--accent:#60a5fa;--accent2:#a78bfa;--red:#ef4444;--green:#4ade80;--gold:#fbbf24;--text:#e0e0ec;--dim:#555570}
 body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;height:100vh;overflow:hidden;display:flex;flex-direction:column;align-items:center}
 
-/* Header */
-.header{
-  width:100%;max-width:700px;padding:16px 20px 0;
-  display:flex;justify-content:space-between;align-items:center;
-}
-.title{font-size:1.1rem;font-weight:800;display:flex;align-items:center;gap:6px}
-.title .g1{color:var(--accent)}
-.title .g2{color:var(--accent2)}
-.stats{display:flex;gap:10px}
-.stat{
-  text-align:center;background:var(--panel);border:1px solid var(--border);
-  border-radius:8px;padding:5px 12px;
-}
-.stat .sv{font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:700}
-.stat .sv.streak{color:var(--gold)}
-.stat .sv.level{color:var(--accent2)}
-.stat .sl{font-size:.45rem;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:1px}
+.header{width:100%;max-width:700px;padding:14px 20px 0;display:flex;justify-content:space-between;align-items:center}
+.title{font-size:1.05rem;font-weight:800;display:flex;align-items:center;gap:6px}
+.title .g1{color:var(--accent)}.title .g2{color:var(--accent2)}
+.stats{display:flex;gap:8px}
+.stat{text-align:center;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:4px 11px}
+.stat .sv{font-family:'JetBrains Mono',monospace;font-size:.95rem;font-weight:700}
+.stat .sv.streak{color:var(--gold)}.stat .sv.level{color:var(--accent2)}
+.stat .sl{font-size:.42rem;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:1px}
 
-/* Scoreboard */
-.scores{
-  width:100%;max-width:700px;padding:12px 20px;
-  display:flex;justify-content:center;gap:30px;
-}
-.score-box{display:flex;align-items:center;gap:8px}
-.score-avatar{
-  width:36px;height:36px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:1.1rem;font-weight:700;
-}
+.scores{width:100%;max-width:700px;padding:10px 20px;display:flex;justify-content:center;gap:24px}
+.score-box{display:flex;align-items:center;gap:7px}
+.score-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700}
 .score-avatar.you{background:rgba(96,165,250,.15);border:2px solid var(--accent);color:var(--accent)}
 .score-avatar.ai{background:rgba(167,139,250,.15);border:2px solid var(--accent2);color:var(--accent2)}
-.score-info .sname{font-size:.7rem;font-weight:600}
-.score-info .spts{font-family:'JetBrains Mono',monospace;font-size:1.2rem;font-weight:700}
-.score-info .spts.you-pts{color:var(--accent)}
-.score-info .spts.ai-pts{color:var(--accent2)}
+.score-info .sname{font-size:.65rem;font-weight:600;color:var(--dim)}
+.score-info .spts{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700}
+.score-info .spts.yp{color:var(--accent)}.score-info .spts.ap{color:var(--accent2)}
 
-/* Chain area */
+/* Rules bar */
+.rules{
+  width:100%;max-width:700px;padding:0 20px;
+  display:flex;justify-content:center;gap:12px;
+  font-size:.55rem;color:var(--dim);
+}
+.rule{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:3px 9px;display:flex;align-items:center;gap:4px}
+.rule .rv{color:var(--text);font-family:'JetBrains Mono',monospace;font-weight:600}
+
 .chain-area{
-  flex:1;width:100%;max-width:700px;
-  overflow-y:auto;padding:10px 20px;
-  display:flex;flex-direction:column;gap:6px;
-  mask-image:linear-gradient(transparent 0%,black 5%,black 90%,transparent 100%);
+  flex:1;width:100%;max-width:700px;overflow-y:auto;padding:8px 20px;
+  display:flex;flex-direction:column;gap:5px;
+  mask-image:linear-gradient(transparent 0%,black 4%,black 92%,transparent 100%);
 }
 .chain-area::-webkit-scrollbar{width:3px}
 .chain-area::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
-.chain-word{
-  display:flex;align-items:center;gap:10px;
-  padding:8px 14px;border-radius:10px;
-  animation:slideIn .3s cubic-bezier(.25,.46,.45,.94);
-}
-@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.chain-word{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:9px;animation:si .3s ease}
+@keyframes si{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.chain-word.yw{background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.1);align-self:flex-start}
+.chain-word.aw{background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.1);align-self:flex-end;flex-direction:row-reverse}
+.chain-word .ca{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:700;flex-shrink:0}
+.chain-word.yw .ca{background:rgba(96,165,250,.2);color:var(--accent)}
+.chain-word.aw .ca{background:rgba(167,139,250,.2);color:var(--accent2)}
+.cw-t{font-size:.95rem;font-weight:600}
+.chain-word.yw .cw-t{color:var(--accent)}.chain-word.aw .cw-t{color:var(--accent2)}
+.cw-l{font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--dim);background:var(--panel);padding:1px 5px;border-radius:3px;border:1px solid var(--border)}
+.cw-b{font-size:.5rem;font-weight:700;color:var(--gold);margin-left:3px}
+.cw-len{font-size:.5rem;color:var(--dim)}
 
-.chain-word.you-word{
-  background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.12);
-  align-self:flex-start;
-}
-.chain-word.ai-word{
-  background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.12);
-  align-self:flex-end;flex-direction:row-reverse;
-}
-.chain-word .cw-avatar{
-  width:24px;height:24px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:.65rem;font-weight:700;flex-shrink:0;
-}
-.chain-word.you-word .cw-avatar{background:rgba(96,165,250,.2);color:var(--accent)}
-.chain-word.ai-word .cw-avatar{background:rgba(167,139,250,.2);color:var(--accent2)}
-.cw-text{font-size:1rem;font-weight:600}
-.chain-word.you-word .cw-text{color:var(--accent)}
-.chain-word.ai-word .cw-text{color:var(--accent2)}
-.cw-link{
-  font-family:'JetBrains Mono',monospace;font-size:.6rem;
-  color:var(--dim);background:var(--panel);
-  padding:2px 6px;border-radius:4px;border:1px solid var(--border);
-}
-.cw-bonus{
-  font-size:.55rem;font-weight:700;color:var(--gold);
-  margin-left:4px;
-}
+.ai-talk{text-align:center;font-size:.65rem;color:var(--dim);font-style:italic;padding:3px 0;min-height:18px}
 
-/* AI trash talk */
-.ai-talk{
-  text-align:center;font-size:.7rem;color:var(--dim);
-  font-style:italic;padding:4px 0;min-height:20px;
-  transition:opacity .3s;
-}
+.thinking{display:none;align-items:center;gap:4px;align-self:flex-end;padding:7px 12px}
+.thinking.show{display:flex}
+.thinking .dot{width:5px;height:5px;border-radius:50%;background:var(--accent2);animation:td .8s ease infinite}
+.thinking .dot:nth-child(2){animation-delay:.15s}.thinking .dot:nth-child(3){animation-delay:.3s}
+@keyframes td{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
 
-/* Input area */
-.input-area{
-  width:100%;max-width:700px;padding:12px 20px 20px;
-  display:flex;flex-direction:column;gap:8px;
-}
-.letter-hint{
-  display:flex;align-items:center;justify-content:center;gap:6px;
-  font-size:.75rem;color:var(--dim);
-}
-.letter-hint .letter{
-  font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:800;
-  color:var(--accent);text-transform:uppercase;
-  animation:pulse-letter 1s ease infinite;
-}
-@keyframes pulse-letter{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.1)}}
-
-.input-row{display:flex;gap:8px}
+.input-area{width:100%;max-width:700px;padding:10px 20px 16px;display:flex;flex-direction:column;gap:6px}
+.letter-hint{display:flex;align-items:center;justify-content:center;gap:5px;font-size:.7rem;color:var(--dim)}
+.letter-hint .letter{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:800;color:var(--accent);text-transform:uppercase;animation:pl 1s ease infinite}
+@keyframes pl{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.08)}}
+.timer-wrap{width:100%;height:4px;background:var(--panel);border-radius:2px;overflow:hidden}
+.timer-bar{height:100%;border-radius:2px;background:var(--green);transition:width .1s linear,background .3s}
+.timer-bar.warn{background:var(--gold)}.timer-bar.danger{background:var(--red)}
+.input-row{display:flex;gap:7px}
 .input-row input{
-  flex:1;padding:12px 16px;border-radius:12px;
+  flex:1;padding:11px 14px;border-radius:10px;
   background:var(--panel);border:2px solid var(--border);
-  color:#fff;font-family:'DM Sans',sans-serif;font-size:1rem;
+  color:#fff;font-family:'DM Sans',sans-serif;font-size:.95rem;
   font-weight:600;outline:none;transition:border-color .2s;
 }
 .input-row input:focus{border-color:var(--accent)}
 .input-row input::placeholder{color:var(--dim)}
-.input-row input.error{border-color:var(--red);animation:shake .3s}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.input-row input.err{border-color:var(--red);animation:shk .3s}
+.input-row input.ok{border-color:var(--green)}
+@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .send-btn{
-  padding:12px 24px;border-radius:12px;border:none;
+  padding:11px 22px;border-radius:10px;border:none;
   background:var(--accent);color:#000;font-family:'DM Sans',sans-serif;
-  font-size:.85rem;font-weight:700;cursor:pointer;transition:all .15s;
+  font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;
 }
-.send-btn:hover{transform:scale(1.03);box-shadow:0 4px 20px rgba(96,165,250,.3)}
+.send-btn:hover{transform:scale(1.03);box-shadow:0 4px 16px rgba(96,165,250,.25)}
 .send-btn:disabled{opacity:.3;cursor:default;transform:none;box-shadow:none}
+.error-msg{font-size:.62rem;color:var(--red);text-align:center;min-height:14px}
+.checking{font-size:.6rem;color:var(--accent);text-align:center;display:none}
+.checking.show{display:block}
 
-/* Timer bar */
-.timer-wrap{width:100%;height:4px;background:var(--panel);border-radius:2px;overflow:hidden}
-.timer-bar{height:100%;border-radius:2px;background:var(--green);transition:width .1s linear,background .3s}
-.timer-bar.warn{background:var(--gold)}
-.timer-bar.danger{background:var(--red)}
-
-/* Error message */
-.error-msg{
-  font-size:.68rem;color:var(--red);text-align:center;
-  min-height:16px;transition:opacity .2s;
-}
-
-/* Overlay */
-.overlay{
-  position:fixed;inset:0;z-index:50;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(4,4,8,.93);backdrop-filter:blur(12px);
-  transition:opacity .3s;
-}
+.overlay{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,4,8,.93);backdrop-filter:blur(12px);transition:opacity .3s}
 .overlay.hidden{opacity:0;pointer-events:none}
-.overlay h1{font-size:clamp(2rem,5vw,3rem);font-weight:800;margin-bottom:4px}
-.overlay .sub{color:var(--dim);font-size:.85rem;margin-bottom:20px;text-align:center;max-width:400px;line-height:1.5}
-.ov-stats{display:flex;gap:16px;margin-bottom:20px}
+.overlay h1{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:800;margin-bottom:4px}
+.overlay .sub{color:var(--dim);font-size:.8rem;margin-bottom:18px;text-align:center;max-width:420px;line-height:1.5}
+.ov-stats{display:flex;gap:14px;margin-bottom:18px}
 .ov-stat{text-align:center}
-.ov-stat .osv{font-size:1.4rem;font-weight:800;color:var(--accent)}
-.ov-stat .osl{font-size:.5rem;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px}
-.play-btn{
-  padding:14px 44px;border-radius:100px;border:2px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.04);color:#fff;font-size:.9rem;font-weight:700;
-  cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;
-}
+.ov-stat .osv{font-size:1.3rem;font-weight:800;color:var(--accent)}
+.ov-stat .osl{font-size:.48rem;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px}
+.play-btn{padding:13px 40px;border-radius:100px;border:2px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#fff;font-size:.85rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
 .play-btn:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);transform:scale(1.04)}
-
-/* AI thinking dots */
-.thinking{display:none;align-items:center;gap:4px;align-self:flex-end;padding:8px 14px}
-.thinking.show{display:flex}
-.thinking .dot{
-  width:6px;height:6px;border-radius:50%;background:var(--accent2);
-  animation:thinkDot .8s ease infinite;
-}
-.thinking .dot:nth-child(2){animation-delay:.15s}
-.thinking .dot:nth-child(3){animation-delay:.3s}
-@keyframes thinkDot{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
+.ov-rules{margin-top:14px;font-size:.6rem;color:var(--dim);text-align:center;line-height:1.6;max-width:380px}
 </style>
 </head>
 <body>
@@ -183,132 +114,112 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;hei
 <div class="header">
   <div class="title">⛓️ <span class="g1">Word</span><span class="g2">Chain</span> Duel</div>
   <div class="stats">
-    <div class="stat"><div class="sv streak" id="streakVal">0</div><div class="sl">Streak</div></div>
-    <div class="stat"><div class="sv level" id="levelVal">1</div><div class="sl">AI Level</div></div>
+    <div class="stat"><div class="sv streak" id="streakVal">0</div><div class="sl">Chain</div></div>
+    <div class="stat"><div class="sv level" id="levelVal">1</div><div class="sl">AI Lvl</div></div>
   </div>
 </div>
 
 <div class="scores">
-  <div class="score-box">
-    <div class="score-avatar you">You</div>
-    <div class="score-info"><div class="sname">You</div><div class="spts you-pts" id="yourScore">0</div></div>
-  </div>
-  <div style="font-size:.7rem;color:var(--dim);align-self:center">VS</div>
-  <div class="score-box">
-    <div class="score-avatar ai">AI</div>
-    <div class="score-info"><div class="sname">Algorithm</div><div class="spts ai-pts" id="aiScore">0</div></div>
-  </div>
+  <div class="score-box"><div class="score-avatar you">You</div><div class="score-info"><div class="sname">You</div><div class="spts yp" id="yourScore">0</div></div></div>
+  <div style="font-size:.65rem;color:var(--dim);align-self:center">VS</div>
+  <div class="score-box"><div class="score-avatar ai">AI</div><div class="score-info"><div class="sname">Algorithm</div><div class="spts ap" id="aiScore">0</div></div></div>
+</div>
+
+<div class="rules">
+  <div class="rule">Min length: <span class="rv" id="rMinLen">3</span></div>
+  <div class="rule">Timer: <span class="rv" id="rTimer">14</span>s</div>
+  <div class="rule">Dictionary: <span class="rv">ON</span> ✓</div>
 </div>
 
 <div class="chain-area" id="chain">
   <div class="thinking" id="thinking"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
 </div>
-
 <div class="ai-talk" id="aiTalk"></div>
 
 <div class="input-area">
-  <div class="letter-hint">Your word must start with: <span class="letter" id="nextLetter">?</span></div>
+  <div class="letter-hint">Starts with: <span class="letter" id="nextLetter">?</span></div>
   <div class="timer-wrap"><div class="timer-bar" id="timerBar" style="width:100%"></div></div>
   <div class="input-row">
-    <input type="text" id="wordInput" placeholder="Type a word..." autocomplete="off" autocapitalize="off" spellcheck="false">
+    <input type="text" id="wordInput" placeholder="Type a real word..." autocomplete="off" autocapitalize="off" spellcheck="false">
     <button class="send-btn" id="sendBtn">GO</button>
   </div>
+  <div class="checking" id="checking">📖 Checking dictionary...</div>
   <div class="error-msg" id="errorMsg"></div>
 </div>
 
-<!-- Overlay -->
 <div class="overlay" id="overlay">
   <h1 id="ovTitle">⛓️ Word Chain Duel</h1>
-  <div class="sub" id="ovSub">Each word must start with the last letter of the previous word. The AI gets smarter every 5 rounds. Win by making it stumble.</div>
+  <div class="sub" id="ovSub">You vs AI. Every word must start with the last letter of the previous word. Words must be real English — verified by dictionary.</div>
   <div class="ov-stats" id="ovStats" style="display:none">
     <div class="ov-stat"><div class="osv" id="oStreak">0</div><div class="osl">Chain</div></div>
     <div class="ov-stat"><div class="osv" id="oYou">0</div><div class="osl">Your Score</div></div>
     <div class="ov-stat"><div class="osv" id="oAi">0</div><div class="osl">AI Score</div></div>
+    <div class="ov-stat"><div class="osv" id="oLevel">1</div><div class="osl">AI Level</div></div>
   </div>
   <button class="play-btn" id="playBtn">START DUEL</button>
+  <div class="ov-rules">📖 Dictionary verified · ⏱ Timer gets shorter · 🧠 AI gets smarter every 5 words<br>💀 Longer words = more points · End on hard letters (X,Z,J) for bonus</div>
 </div>
 
 <script>
 const MK='adsqrtJK4Yjm9gcWTUpjK67Ztw0h5gsf';
 
 // ═══════════════════════════════════════════════
-//  STATE
+//  DICTIONARY CHECK via free API
 // ═══════════════════════════════════════════════
-let gameActive=false;
-let usedWords=new Set();
-let chain=[];
-let streak=0;
-let yourScore=0,aiScore=0;
-let aiLevel=1;
-let currentLetter='';
-let isYourTurn=true;
-let timerMax=15;
-let timer=timerMax;
-let timerInterval=null;
-let waitingForAI=false;
+const dictCache=new Map();
 
-const chainEl=document.getElementById('chain');
-const thinkEl=document.getElementById('thinking');
-const inputEl=document.getElementById('wordInput');
-const sendBtn=document.getElementById('sendBtn');
-const errorEl=document.getElementById('errorMsg');
-const talkEl=document.getElementById('aiTalk');
-
-// AI trash talk
-const TRASH_TALK={
-  easy:[
-    "Not bad... for a human.","I'll allow it.","Predictable, but acceptable.",
-    "My grandma algorithm could do better.","Warming up, are we?","Basic. Next.",
-  ],
-  medium:[
-    "Getting interesting.","You're making me work for this.","Okay, I see you.",
-    "I had to think for 0.3 seconds.","Respectable play.","The chain grows...",
-  ],
-  hard:[
-    "I'm using 40% of my power.","This chain is getting spicy.",
-    "You might actually be good.","Processing... impressed.",
-    "I'll remember this one.","Calculating respect...",
-  ],
-  flex:[
-    "Try that letter on for size.","Good luck with THAT.","😏",
-    "I chose violence.","Strategically devastating.",
-    "That word ends in what? Exactly.","Your move... if you can.",
-  ],
-  stumped:[
-    "...","I need a moment.","This is fine.","Recalculating...",
-    "You got me. This time.","My circuits are fried.",
-  ]
-};
-
-function getTrash(type){
-  const arr=TRASH_TALK[type]||TRASH_TALK.easy;
-  return arr[Math.floor(Math.random()*arr.length)];
+async function isRealWord(word){
+  if(dictCache.has(word))return dictCache.get(word);
+  try{
+    const r=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+    const valid=r.ok;
+    dictCache.set(word,valid);
+    return valid;
+  }catch(e){
+    // If API fails, fall back to allowing it (don't punish player for network issues)
+    return true;
+  }
 }
 
 // ═══════════════════════════════════════════════
-//  GAME FLOW
+//  STATE
+// ═══════════════════════════════════════════════
+let gameActive=false,usedWords=new Set(),chain=[],streak=0,yourScore=0,aiScore=0;
+let aiLevel=1,currentLetter='',isYourTurn=true,timerMax=14,timer=14,timerInt=null,busy=false;
+
+const chainEl=document.getElementById('chain'),thinkEl=document.getElementById('thinking');
+const inputEl=document.getElementById('wordInput'),sendBtn=document.getElementById('sendBtn');
+const errorEl=document.getElementById('errorMsg'),talkEl=document.getElementById('aiTalk');
+const checkEl=document.getElementById('checking');
+
+function getMinLen(){return Math.min(7,3+Math.floor(aiLevel/4))}
+function getTimerMax(){return Math.max(6,14-aiLevel)}
+
+const TRASH={
+  easy:["Not bad.","I'll allow it.","Predictable.","Basic.","Warmup's over soon.","Keep going."],
+  mid:["Okay, I see you.","Interesting choice.","Respectable.","The chain grows.","Getting warmer.","Not terrible."],
+  hard:["I'm trying now.","Strategic.","You might survive.","Calculating respect.","This is fun.","Almost impressed."],
+  flex:["Good luck with that letter.","😏","Strategically devastating.","Your move... if you can.","Try that one.","Suffer."],
+  stumped:["...","Fine. You win.","My circuits are fried.","This time.","*rage quits*","Impossible."],
+};
+function trash(t){const a=TRASH[t]||TRASH.easy;return a[Math.floor(Math.random()*a.length)]}
+
+// ═══════════════════════════════════════════════
+//  GAME
 // ═══════════════════════════════════════════════
 document.getElementById('playBtn').addEventListener('click',startGame);
 sendBtn.addEventListener('click',submitWord);
 inputEl.addEventListener('keydown',e=>{if(e.key==='Enter')submitWord()});
 
 function startGame(){
-  gameActive=true;
-  usedWords.clear();
-  chain=[];
-  streak=0;yourScore=0;aiScore=0;
-  aiLevel=1;
+  gameActive=true;usedWords.clear();chain=[];streak=0;yourScore=0;aiScore=0;aiLevel=1;
   chainEl.querySelectorAll('.chain-word').forEach(e=>e.remove());
   document.getElementById('overlay').classList.add('hidden');
   document.getElementById('ovStats').style.display='flex';
-  talkEl.textContent='';
-  errorEl.textContent='';
-  
-  updateHUD();
-  
-  // AI goes first with a starter word
+  talkEl.textContent='';errorEl.textContent='';
+  updateHUD();updateRules();
   isYourTurn=false;
-  aiPlayWord();
+  aiPlay();
 }
 
 function updateHUD(){
@@ -317,222 +228,192 @@ function updateHUD(){
   document.getElementById('yourScore').textContent=yourScore;
   document.getElementById('aiScore').textContent=aiScore;
 }
+function updateRules(){
+  document.getElementById('rMinLen').textContent=getMinLen();
+  document.getElementById('rTimer').textContent=getTimerMax();
+}
 
 function startTimer(){
-  clearInterval(timerInterval);
-  timerMax=Math.max(6,16-aiLevel);
-  timer=timerMax;
+  clearInterval(timerInt);
+  timerMax=getTimerMax();timer=timerMax;
   const bar=document.getElementById('timerBar');
-  timerInterval=setInterval(()=>{
+  timerInt=setInterval(()=>{
     if(!gameActive||!isYourTurn)return;
     timer-=0.05;
     const pct=Math.max(0,(timer/timerMax)*100);
     bar.style.width=pct+'%';
     bar.className='timer-bar'+(pct<25?' danger':pct<50?' warn':'');
-    if(timer<=0){
-      clearInterval(timerInterval);
-      endGame('timeout');
-    }
+    if(timer<=0){clearInterval(timerInt);endGame('timeout')}
   },50);
 }
 
 async function submitWord(){
-  if(!gameActive||!isYourTurn||waitingForAI)return;
-  
-  const word=inputEl.value.trim().toLowerCase();
-  inputEl.value='';
-  errorEl.textContent='';
-  
-  if(!word){return}
-  
-  // Validate: starts with correct letter
-  if(currentLetter&&word[0]!==currentLetter){
-    showError(`Must start with "${currentLetter.toUpperCase()}"`);
+  if(!gameActive||!isYourTurn||busy)return;
+  const word=inputEl.value.trim().toLowerCase().replace(/[^a-z]/g,'');
+  inputEl.value='';errorEl.textContent='';
+  if(!word)return;
+
+  const minLen=getMinLen();
+
+  // Basic checks
+  if(currentLetter&&word[0]!==currentLetter){showErr(`Must start with "${currentLetter.toUpperCase()}"`);return}
+  if(usedWords.has(word)){showErr('Already used!');return}
+  if(word.length<minLen){showErr(`Min ${minLen} letters! (AI Level ${aiLevel})`);return}
+
+  // Dictionary check
+  busy=true;
+  inputEl.disabled=true;sendBtn.disabled=true;
+  checkEl.classList.add('show');
+
+  const real=await isRealWord(word);
+  checkEl.classList.remove('show');
+
+  if(!real){
+    busy=false;inputEl.disabled=false;sendBtn.disabled=false;
+    showErr(`"${word}" isn't a real word! 📖`);
+    inputEl.classList.add('err');setTimeout(()=>inputEl.classList.remove('err'),400);
     return;
   }
-  
-  // Validate: not used
-  if(usedWords.has(word)){
-    showError('Already used!');
-    return;
-  }
-  
-  // Validate: at least 2 chars
-  if(word.length<2){
-    showError('Too short!');
-    return;
-  }
-  
-  // Validate: only letters
-  if(!/^[a-z]+$/.test(word)){
-    showError('Letters only!');
-    return;
-  }
-  
-  // Accept word
-  clearInterval(timerInterval);
-  usedWords.add(word);
-  chain.push({word,who:'you'});
-  
-  // Score: longer words = more points, bonus for tricky ending letters
+
+  // Valid!
+  clearInterval(timerInt);
+  inputEl.classList.add('ok');setTimeout(()=>inputEl.classList.remove('ok'),400);
+
+  usedWords.add(word);chain.push({word,who:'you'});
+
   const hardLetters='xzqjv';
-  const basePoints=word.length*10;
-  const hardBonus=hardLetters.includes(word[word.length-1])?50:0;
-  const streakBonus=streak>=5?25:streak>=10?50:0;
-  const totalPts=basePoints+hardBonus+streakBonus;
-  yourScore+=totalPts;
-  streak++;
-  
-  addChainWord(word,'you',hardBonus>0?'+'+totalPts+'!':null);
-  
-  // Update level every 5 words
+  const basePts=word.length*10;
+  const hardBonus=hardLetters.includes(word[word.length-1])?75:0;
+  const lenBonus=word.length>=8?40:word.length>=6?15:0;
+  const streakBonus=streak>=10?50:streak>=5?20:0;
+  const total=basePts+hardBonus+lenBonus+streakBonus;
+  yourScore+=total;streak++;
+
+  const bonusTxt=(hardBonus+lenBonus+streakBonus)>0?'+'+total:'';
+  addChainWord(word,'you',bonusTxt,word.length);
+
   aiLevel=Math.min(20,1+Math.floor(streak/5));
-  
   currentLetter=word[word.length-1];
   document.getElementById('nextLetter').textContent=currentLetter.toUpperCase();
-  updateHUD();
-  
-  // AI's turn
-  isYourTurn=false;
-  inputEl.disabled=true;
-  sendBtn.disabled=true;
-  
-  await aiPlayWord();
+  updateHUD();updateRules();
+
+  isYourTurn=false;inputEl.disabled=true;sendBtn.disabled=true;
+  busy=false;
+  await aiPlay();
 }
 
 // ═══════════════════════════════════════════════
-//  AI TURN (Mistral-powered)
+//  AI TURN
 // ═══════════════════════════════════════════════
-async function aiPlayWord(){
-  waitingForAI=true;
+async function aiPlay(){
+  busy=true;
   thinkEl.classList.add('show');
-  
-  // Simulate thinking time (scales with level — faster as it gets smarter)
-  const thinkTime=Math.max(400,2000-aiLevel*80)+Math.random()*500;
-  
+
+  const thinkTime=Math.max(500,1800-aiLevel*60)+Math.random()*600;
+  const minLen=getMinLen();
+  const startL=currentLetter||'';
+
   let aiWord=null;
-  
   try{
-    const usedList=[...usedWords].slice(-30).join(', ');
-    const startLetter=currentLetter||'';
-    
-    const prompt=startLetter
-      ?`Word chain game. Used words: [${usedList}]. Give ONE English word starting with "${startLetter}". AI level ${aiLevel}/20 — ${aiLevel<=5?'use common easy words':aiLevel<=10?'use moderately uncommon words':aiLevel<=15?'use clever, uncommon words':'use rare, strategic words that end in difficult letters like X, Z, J, Q, V'}. Reply ONLY with the word, nothing else. One single lowercase word.`
-      :`Word chain game. Say ONE common English word to start. Reply ONLY with the word, nothing else. One single lowercase word.`;
-    
+    const used=[...usedWords].slice(-40).join(', ');
+    const strat=aiLevel<=3?'Use common, simple English words.'
+      :aiLevel<=7?'Use real but somewhat uncommon English words.'
+      :aiLevel<=12?'Use clever, uncommon real English words. Try to end on difficult letters like X, Z, J, V, Q when possible.'
+      :'Use rare but real English dictionary words. ALWAYS try to end your word on X, Z, J, or V to make it hard for the opponent. Be strategic and ruthless.';
+
+    const prompt=startL
+      ?`Word chain game. Rules: word must start with "${startL}", min ${minLen} letters, must be a REAL English dictionary word, cannot be: [${used}]. ${strat} Reply ONLY the word. One lowercase word. Nothing else.`
+      :`Word chain game. Say one common English word (min ${minLen} letters) to start a chain. Reply ONLY the word. One lowercase word.`;
+
     const resp=await fetch('https://api.mistral.ai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+MK},
       body:JSON.stringify({
         model:'mistral-small-latest',
         messages:[{role:'user',content:prompt}],
-        max_tokens:20,temperature:aiLevel>10?0.9:0.5,
+        max_tokens:20,temperature:aiLevel>10?0.8:0.4,
       })
     });
-    
     if(resp.ok){
       const data=await resp.json();
       let raw=data.choices[0].message.content.trim().toLowerCase().replace(/[^a-z]/g,'');
-      if(raw.length>=2&&(!startLetter||raw[0]===startLetter)&&!usedWords.has(raw)){
-        aiWord=raw;
+      if(raw.length>=minLen&&(!startL||raw[0]===startL)&&!usedWords.has(raw)){
+        // Verify AI's word is real too
+        const aiReal=await isRealWord(raw);
+        if(aiReal)aiWord=raw;
       }
     }
-  }catch(e){console.error('AI error:',e)}
-  
-  // Wait minimum think time
+  }catch(e){console.error('AI:',e)}
+
   await new Promise(r=>setTimeout(r,thinkTime));
-  
-  thinkEl.classList.remove('show');
-  waitingForAI=false;
-  
-  // If AI couldn't find a word, player wins!
+  thinkEl.classList.remove('show');busy=false;
+
   if(!aiWord){
-    talkEl.textContent='"'+getTrash('stumped')+'"';
-    streak+=3; // bonus for stumping AI
-    yourScore+=200;
+    talkEl.textContent='"'+trash('stumped')+'"';
+    yourScore+=300;streak+=3;
     updateHUD();
     endGame('ai_stumped');
     return;
   }
-  
-  // AI plays word
-  usedWords.add(aiWord);
-  chain.push({word:aiWord,who:'ai'});
-  
-  const aiPts=aiWord.length*10;
-  aiScore+=aiPts;
-  addChainWord(aiWord,'ai');
-  
-  // Trash talk
-  const talkType=aiLevel<=5?'easy':aiLevel<=10?'medium':aiLevel<=15?'hard':'flex';
-  const hardEnding='xzqjv'.includes(aiWord[aiWord.length-1]);
-  talkEl.textContent='"'+(hardEnding?getTrash('flex'):getTrash(talkType))+'"';
-  
+
+  usedWords.add(aiWord);chain.push({word:aiWord,who:'ai'});
+  aiScore+=aiWord.length*10;
+  addChainWord(aiWord,'ai','',aiWord.length);
+
+  const hardEnd='xzqjv'.includes(aiWord[aiWord.length-1]);
+  const tt=hardEnd?'flex':aiLevel<=3?'easy':aiLevel<=7?'mid':aiLevel<=12?'hard':'flex';
+  talkEl.textContent='"'+trash(tt)+'"';
+
   currentLetter=aiWord[aiWord.length-1];
   document.getElementById('nextLetter').textContent=currentLetter.toUpperCase();
   updateHUD();
-  
-  // Player's turn
-  isYourTurn=true;
-  inputEl.disabled=false;
-  sendBtn.disabled=false;
-  inputEl.focus();
+
+  isYourTurn=true;inputEl.disabled=false;sendBtn.disabled=false;inputEl.focus();
   startTimer();
 }
 
 // ═══════════════════════════════════════════════
-//  UI HELPERS
+//  UI
 // ═══════════════════════════════════════════════
-function addChainWord(word,who,bonus){
+function addChainWord(word,who,bonus,len){
   const div=document.createElement('div');
-  div.className='chain-word '+(who==='you'?'you-word':'ai-word');
-  
-  // Highlight the linking letter
-  const linkLetter=word[0].toUpperCase();
-  const lastLetter=word[word.length-1].toUpperCase();
-  
+  div.className='chain-word '+(who==='you'?'yw':'aw');
+  const last=word[word.length-1].toUpperCase();
   div.innerHTML=`
-    <div class="cw-avatar">${who==='you'?'Y':'AI'}</div>
-    <span class="cw-text">${word}</span>
-    <span class="cw-link">${lastLetter} →</span>
-    ${bonus?`<span class="cw-bonus">${bonus}</span>`:''}
+    <div class="ca">${who==='you'?'Y':'AI'}</div>
+    <span class="cw-t">${word}</span>
+    <span class="cw-len">${len}ch</span>
+    <span class="cw-l">${last} →</span>
+    ${bonus?`<span class="cw-b">${bonus}</span>`:''}
   `;
-  
   chainEl.insertBefore(div,thinkEl);
   chainEl.scrollTop=chainEl.scrollHeight;
 }
 
-function showError(msg){
+function showErr(msg){
   errorEl.textContent=msg;
-  inputEl.classList.add('error');
-  setTimeout(()=>inputEl.classList.remove('error'),400);
-  setTimeout(()=>{if(errorEl.textContent===msg)errorEl.textContent=''},2000);
+  inputEl.classList.add('err');
+  setTimeout(()=>inputEl.classList.remove('err'),400);
+  setTimeout(()=>{if(errorEl.textContent===msg)errorEl.textContent=''},2500);
 }
 
 function endGame(reason){
-  gameActive=false;
-  clearInterval(timerInterval);
-  inputEl.disabled=true;
-  sendBtn.disabled=true;
-  
+  gameActive=false;clearInterval(timerInt);
+  inputEl.disabled=true;sendBtn.disabled=true;
   const ov=document.getElementById('overlay');
-  const title=document.getElementById('ovTitle');
-  const sub=document.getElementById('ovSub');
-  
-  if(reason==='ai_stumped'){
-    title.textContent='🏆 YOU WIN!';
-    sub.textContent=`The Algorithm couldn't think of a word starting with "${currentLetter.toUpperCase()}"! You broke it at level ${aiLevel}.`;
-  } else if(reason==='timeout'){
-    title.textContent='⏰ TIME\'S UP';
-    sub.textContent=`You ran out of time on "${currentLetter.toUpperCase()}". The Algorithm smirks.`;
-  }
-  
+  const won=reason==='ai_stumped';
+  document.getElementById('ovTitle').textContent=won?'🏆 YOU WIN!':reason==='timeout'?'⏰ TIME\'S UP':'💀 GAME OVER';
+  document.getElementById('ovSub').textContent=won
+    ?`The Algorithm couldn't find a "${currentLetter.toUpperCase()}" word with ${getMinLen()}+ letters! You broke AI level ${aiLevel}.`
+    :reason==='timeout'
+    ?`Ran out of time on "${currentLetter.toUpperCase()}" (${getTimerMax()}s limit at level ${aiLevel}).`
+    :'The chain is broken.';
   document.getElementById('oStreak').textContent=streak;
   document.getElementById('oYou').textContent=yourScore;
   document.getElementById('oAi').textContent=aiScore;
+  document.getElementById('oLevel').textContent=aiLevel;
   document.getElementById('playBtn').textContent='REMATCH';
-  
-  setTimeout(()=>ov.classList.remove('hidden'),800);
+  setTimeout(()=>ov.classList.remove('hidden'),700);
 }
 </script>
 </body>
