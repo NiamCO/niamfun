@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crowd vs. You</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#08080e;--panel:#0f0f18;--border:#1c1c2c;--accent:#818cf8;--accent2:#f472b6;--green:#4ade80;--red:#ef4444;--gold:#fbbf24;--text:#e0e0ec;--dim:#555570}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+
+.header{width:100%;max-width:640px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+.title{font-size:1rem;font-weight:800;display:flex;align-items:center;gap:6px}
+.title span{color:var(--accent)}
+.hud{display:flex;gap:8px}
+.hud-box{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:4px 12px;text-align:center}
+.hud-box .hv{font-family:'JetBrains Mono',monospace;font-size:.95rem;font-weight:700;color:var(--accent)}
+.hud-box .hl{font-size:.42rem;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:1px}
+
+.progress{width:100%;max-width:640px;padding:0 20px;margin-bottom:12px}
+.prog-bar{height:4px;background:var(--panel);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease}
+
+/* Question card */
+.card{
+  width:100%;max-width:640px;padding:0 20px;flex:1;
+  display:flex;flex-direction:column;
+}
+.q-num{font-size:.55rem;color:var(--dim);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:6px}
+.q-text{font-size:clamp(1rem,2.5vw,1.3rem);font-weight:700;line-height:1.4;margin-bottom:16px}
+.q-sub{font-size:.72rem;color:var(--dim);margin-bottom:14px;line-height:1.5}
+
+/* Options with sliders */
+.options{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.opt-row{
+  background:var(--panel);border:1px solid var(--border);border-radius:10px;
+  padding:10px 14px;display:flex;align-items:center;gap:10px;
+  transition:border-color .2s;
+}
+.opt-row:hover{border-color:var(--accent)}
+.opt-label{font-size:.82rem;font-weight:600;min-width:80px}
+.opt-slider{flex:1;-webkit-appearance:none;height:6px;border-radius:3px;background:var(--border);outline:none}
+.opt-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:3px solid var(--bg)}
+.opt-val{
+  font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:700;
+  min-width:36px;text-align:right;color:var(--accent);
+}
+.opt-total{
+  text-align:center;font-family:'JetBrains Mono',monospace;font-size:.75rem;
+  padding:6px;border-radius:6px;margin-bottom:8px;transition:all .3s;
+}
+.opt-total.ok{color:var(--green)}
+.opt-total.bad{color:var(--red)}
+
+.submit-btn{
+  width:100%;padding:13px;border-radius:10px;border:none;
+  background:var(--accent);color:#fff;font-family:'DM Sans',sans-serif;
+  font-size:.88rem;font-weight:700;cursor:pointer;transition:all .15s;
+  margin-bottom:16px;
+}
+.submit-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(129,140,248,.3)}
+.submit-btn:disabled{opacity:.3;cursor:default;transform:none;box-shadow:none}
+
+/* Results */
+.results{display:none;flex-direction:column;gap:8px;margin-bottom:16px;animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.result-row{
+  background:var(--panel);border:1px solid var(--border);border-radius:10px;
+  padding:10px 14px;display:flex;flex-direction:column;gap:6px;
+}
+.result-header{display:flex;justify-content:space-between;align-items:center}
+.result-label{font-size:.8rem;font-weight:600}
+.result-nums{display:flex;gap:10px;font-family:'JetBrains Mono',monospace;font-size:.7rem}
+.result-nums .you-n{color:var(--accent)}
+.result-nums .crowd-n{color:var(--accent2)}
+.result-nums .diff-n{font-weight:700}
+.result-nums .diff-n.good{color:var(--green)}
+.result-nums .diff-n.ok{color:var(--gold)}
+.result-nums .diff-n.bad{color:var(--red)}
+
+.result-bars{display:flex;gap:4px;height:12px;border-radius:3px;overflow:hidden;background:var(--border)}
+.bar-you{background:var(--accent);transition:width .6s cubic-bezier(.25,.46,.45,.94);border-radius:3px 0 0 3px}
+.bar-crowd{background:var(--accent2);transition:width .6s cubic-bezier(.25,.46,.45,.94);border-radius:0 3px 3px 0}
+
+.result-score{
+  text-align:center;font-size:1.3rem;font-weight:800;margin:8px 0;
+  padding:12px;border-radius:10px;
+  background:rgba(129,140,248,.06);border:1px solid rgba(129,140,248,.12);
+}
+.result-score .pts{color:var(--accent)}
+.result-score .label{font-size:.55rem;color:var(--dim);display:block;margin-top:2px;text-transform:uppercase;letter-spacing:1.5px}
+
+.next-btn{
+  width:100%;padding:12px;border-radius:10px;border:2px solid var(--border);
+  background:var(--panel);color:var(--text);font-family:'DM Sans',sans-serif;
+  font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;
+  margin-bottom:16px;
+}
+.next-btn:hover{border-color:var(--accent);background:rgba(129,140,248,.05)}
+
+/* Overlay */
+.overlay{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,4,8,.93);backdrop-filter:blur(12px);transition:opacity .3s}
+.overlay.hidden{opacity:0;pointer-events:none}
+.overlay h1{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:800;margin-bottom:4px}
+.overlay .sub{color:var(--dim);font-size:.8rem;margin-bottom:20px;text-align:center;max-width:400px;line-height:1.5}
+.ov-big{font-size:2.5rem;font-weight:800;color:var(--accent);margin-bottom:4px}
+.ov-big-label{font-size:.55rem;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:16px}
+.ov-grades{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;justify-content:center}
+.ov-grade{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px 14px;text-align:center}
+.ov-grade .gv{font-family:'JetBrains Mono',monospace;font-size:.9rem;font-weight:700;color:var(--accent)}
+.ov-grade .gl{font-size:.42rem;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:1px}
+.play-btn{padding:13px 40px;border-radius:100px;border:2px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#fff;font-size:.85rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.play-btn:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);transform:scale(1.04)}
+
+.legend{display:flex;gap:12px;justify-content:center;margin-bottom:8px;font-size:.6rem;color:var(--dim)}
+.legend .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:3px}
+.legend .dot.you{background:var(--accent)}.legend .dot.crowd{background:var(--accent2)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="title">👥 <span>Crowd</span> vs. You</div>
+  <div class="hud">
+    <div class="hud-box"><div class="hv" id="hScore">0</div><div class="hl">Score</div></div>
+    <div class="hud-box"><div class="hv" id="hQ">1/12</div><div class="hl">Question</div></div>
+  </div>
+</div>
+
+<div class="progress"><div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div></div>
+
+<div class="card" id="card"></div>
+
+<div class="overlay" id="overlay">
+  <h1>👥 Crowd vs. You</h1>
+  <div class="sub">Can you predict how the crowd thinks? For each question, guess what percentage of people choose each option. The closer you are, the more points you get.</div>
+  <button class="play-btn" id="playBtn">PLAY</button>
+</div>
+
+<div class="overlay hidden" id="endScreen">
+  <h1 id="endTitle">Results</h1>
+  <div class="ov-big" id="endScore">0</div>
+  <div class="ov-big-label">Total Score</div>
+  <div class="ov-grades" id="endGrades"></div>
+  <div class="sub" id="endMsg"></div>
+  <button class="play-btn" id="replayBtn">PLAY AGAIN</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  QUESTIONS - real psychology/survey data
+// ═══════════════════════════════════════════════════
+const QUESTIONS=[
+{
+  q:"Pick a number from 1 to 10.",
+  sub:"What do most people pick? Distribute 100% across the options.",
+  opts:["1","2","3","4","5","6","7","8","9","10"],
+  // 7 is the most common (~28%), then 3 (~15%), then 5 (~12%)
+  crowd:[4,5,15,6,12,5,28,10,7,8],
+},
+{
+  q:"Rock, Paper, or Scissors?",
+  sub:"In first-round games, what does the crowd throw?",
+  opts:["Rock","Paper","Scissors"],
+  crowd:[36,30,34], // Rock is slightly most popular
+},
+{
+  q:"Pick a color.",
+  sub:"Which color do most people pick when asked?",
+  opts:["Red","Blue","Green","Yellow","Purple","Orange"],
+  crowd:[20,35,15,10,12,8], // Blue dominates
+},
+{
+  q:"Heads or Tails?",
+  sub:"When asked to call a coin flip, what do people choose?",
+  opts:["Heads","Tails"],
+  crowd:[62,38], // Heads bias
+},
+{
+  q:"Pick a random card suit.",
+  sub:"What suit do most people think of first?",
+  opts:["Hearts ♥","Spades ♠","Diamonds ♦","Clubs ♣"],
+  crowd:[35,28,22,15], // Hearts is most popular
+},
+{
+  q:"What's for dinner?",
+  sub:"If people could eat anything tonight, what would they pick?",
+  opts:["Pizza","Sushi","Burger","Pasta","Tacos","Steak"],
+  crowd:[28,15,20,14,12,11],
+},
+{
+  q:"Pick a superpower.",
+  sub:"Which power do people wish for most?",
+  opts:["Flight","Invisibility","Time Travel","Teleportation","Mind Reading"],
+  crowd:[18,12,25,28,17], // Teleportation & time travel win
+},
+{
+  q:"Morning person or night owl?",
+  sub:"How does the crowd split on sleep schedules?",
+  opts:["Early Bird","Night Owl","Neither"],
+  crowd:[25,55,20], // Night owls dominate
+},
+{
+  q:"Dogs or cats?",
+  sub:"The eternal debate. How does the crowd split?",
+  opts:["Dogs","Cats","Both","Neither"],
+  crowd:[45,25,25,5],
+},
+{
+  q:"What era would you time travel to?",
+  sub:"If people could visit any time period...",
+  opts:["Dinosaurs","Ancient Rome","Medieval","1960s","Future"],
+  crowd:[12,15,8,22,43], // Future wins
+},
+{
+  q:"How many hours of sleep did you get last night?",
+  sub:"What's the crowd's sleep distribution?",
+  opts:["<5 hours","5-6 hours","7-8 hours","9+ hours"],
+  crowd:[15,30,42,13],
+},
+{
+  q:"If you found $100 on the ground, what would you do?",
+  sub:"How honest is the crowd really?",
+  opts:["Keep it","Try to find owner","Turn it in","Split it"],
+  crowd:[42,20,15,23],
+},
+];
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let currentQ=0,totalScore=0,roundScores=[],guesses=[];
+const card=document.getElementById('card');
+
+document.getElementById('playBtn').addEventListener('click',startGame);
+document.getElementById('replayBtn').addEventListener('click',startGame);
+
+function startGame(){
+  currentQ=0;totalScore=0;roundScores=[];guesses=[];
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('endScreen').classList.add('hidden');
+  loadQuestion();
+}
+
+function loadQuestion(){
+  const q=QUESTIONS[currentQ];
+  document.getElementById('hQ').textContent=(currentQ+1)+'/'+QUESTIONS.length;
+  document.getElementById('progFill').style.width=((currentQ)/QUESTIONS.length*100)+'%';
+
+  // Build even distribution as starting point
+  const evenPct=Math.floor(100/q.opts.length);
+  const initVals=q.opts.map((_,i)=>i===0?100-(evenPct*(q.opts.length-1)):evenPct);
+
+  let html=`
+    <div class="q-num">Question ${currentQ+1} of ${QUESTIONS.length}</div>
+    <div class="q-text">${q.q}</div>
+    <div class="q-sub">${q.sub}</div>
+    <div class="opt-total" id="optTotal">Total: 100%</div>
+    <div class="options" id="opts">
+  `;
+
+  q.opts.forEach((opt,i)=>{
+    html+=`
+      <div class="opt-row">
+        <div class="opt-label">${opt}</div>
+        <input type="range" class="opt-slider" data-i="${i}" min="0" max="100" value="${initVals[i]}">
+        <div class="opt-val" id="ov-${i}">${initVals[i]}%</div>
+      </div>
+    `;
+  });
+
+  html+=`</div>
+    <button class="submit-btn" id="submitBtn">Lock In Prediction</button>
+    <div class="results" id="results"></div>
+  `;
+
+  card.innerHTML=html;
+
+  // Slider logic — auto-redistribute
+  const sliders=card.querySelectorAll('.opt-slider');
+  sliders.forEach(sl=>{
+    sl.addEventListener('input',()=>{
+      redistributeSliders(sliders,parseInt(sl.dataset.i));
+    });
+  });
+
+  document.getElementById('submitBtn').addEventListener('click',()=>submitGuess(q));
+}
+
+function redistributeSliders(sliders,changedIdx){
+  const vals=[...sliders].map(s=>parseInt(s.value));
+  const total=vals.reduce((a,b)=>a+b,0);
+  const diff=total-100;
+
+  if(diff!==0){
+    // Distribute difference among OTHER sliders proportionally
+    const others=[...sliders].filter((_,i)=>i!==changedIdx);
+    const othersTotal=others.reduce((a,s)=>a+parseInt(s.value),0);
+
+    if(othersTotal>0){
+      others.forEach(s=>{
+        const i=parseInt(s.dataset.i);
+        const share=parseInt(s.value)/othersTotal;
+        const newVal=Math.max(0,Math.round(parseInt(s.value)-diff*share));
+        s.value=newVal;
+      });
+    }
+  }
+
+  // Update displays
+  let newTotal=0;
+  sliders.forEach(s=>{
+    const i=parseInt(s.dataset.i);
+    const v=parseInt(s.value);
+    document.getElementById('ov-'+i).textContent=v+'%';
+    newTotal+=v;
+  });
+
+  const totalEl=document.getElementById('optTotal');
+  totalEl.textContent='Total: '+newTotal+'%';
+  totalEl.className='opt-total'+(newTotal===100?' ok':' bad');
+  document.getElementById('submitBtn').disabled=newTotal!==100;
+}
+
+function submitGuess(q){
+  const sliders=card.querySelectorAll('.opt-slider');
+  const playerGuess=[...sliders].map(s=>parseInt(s.value));
+  guesses.push(playerGuess);
+
+  // Calculate score: lower total error = more points
+  let totalError=0;
+  q.opts.forEach((_,i)=>{
+    totalError+=Math.abs(playerGuess[i]-q.crowd[i]);
+  });
+  // Max possible error for N options is 200 (0 vs 100 on each pair)
+  // Score: 0-1000 range
+  const maxError=200;
+  const accuracy=Math.max(0,1-totalError/maxError);
+  const roundScore=Math.round(accuracy*1000);
+  totalScore+=roundScore;
+  roundScores.push(roundScore);
+
+  document.getElementById('hScore').textContent=totalScore;
+
+  // Hide submit, show results
+  document.getElementById('submitBtn').style.display='none';
+  card.querySelectorAll('.opt-slider').forEach(s=>s.disabled=true);
+
+  const resultsEl=document.getElementById('results');
+  resultsEl.style.display='flex';
+
+  const legend=document.createElement('div');
+  legend.className='legend';
+  legend.innerHTML='<span><span class="dot you"></span>Your guess</span><span><span class="dot crowd"></span>Actual crowd</span>';
+  resultsEl.appendChild(legend);
+
+  q.opts.forEach((opt,i)=>{
+    const diff=Math.abs(playerGuess[i]-q.crowd[i]);
+    const grade=diff<=3?'good':diff<=10?'ok':'bad';
+    const row=document.createElement('div');
+    row.className='result-row';
+    row.innerHTML=`
+      <div class="result-header">
+        <div class="result-label">${opt}</div>
+        <div class="result-nums">
+          <span class="you-n">You: ${playerGuess[i]}%</span>
+          <span class="crowd-n">Crowd: ${q.crowd[i]}%</span>
+          <span class="diff-n ${grade}">±${diff}</span>
+        </div>
+      </div>
+      <div class="result-bars">
+        <div class="bar-you" style="width:0%"></div>
+        <div class="bar-crowd" style="width:0%"></div>
+      </div>
+    `;
+    resultsEl.appendChild(row);
+
+    // Animate bars
+    setTimeout(()=>{
+      row.querySelector('.bar-you').style.width=playerGuess[i]+'%';
+      row.querySelector('.bar-crowd').style.width=q.crowd[i]+'%';
+    },100+i*80);
+  });
+
+  // Score display
+  const scoreDiv=document.createElement('div');
+  scoreDiv.className='result-score';
+  const emoji=roundScore>=800?'🎯':roundScore>=600?'👏':roundScore>=400?'😅':'💀';
+  const msg=roundScore>=800?'Incredible read!':roundScore>=600?'Pretty close!':roundScore>=400?'Not bad':'Way off!';
+  scoreDiv.innerHTML=`${emoji} <span class="pts">${roundScore}</span>/1000 <span class="label">${msg}</span>`;
+  resultsEl.appendChild(scoreDiv);
+
+  // Next button
+  const nextBtn=document.createElement('button');
+  nextBtn.className='next-btn';
+  nextBtn.textContent=currentQ<QUESTIONS.length-1?'Next Question →':'See Final Results';
+  nextBtn.addEventListener('click',()=>{
+    currentQ++;
+    if(currentQ>=QUESTIONS.length)showEnd();
+    else loadQuestion();
+  });
+  resultsEl.appendChild(nextBtn);
+}
+
+function showEnd(){
+  const avg=Math.round(totalScore/QUESTIONS.length);
+  const best=Math.max(...roundScores);
+  const worst=Math.min(...roundScores);
+
+  document.getElementById('endTitle').textContent=
+    avg>=700?'🧠 Mind Reader!':avg>=500?'👥 Crowd Expert':avg>=300?'🤔 Getting There':'😵 Way Off';
+
+  document.getElementById('endScore').textContent=totalScore;
+
+  const msg=avg>=700?'You practically ARE the crowd. Are you 1000 people in a trenchcoat?'
+    :avg>=500?'You\'ve got a solid read on how people think.'
+    :avg>=300?'Some good guesses, some wild ones. The crowd remains mysterious.'
+    :'The crowd thinks nothing like you. You\'re either a genius or an alien.';
+  document.getElementById('endMsg').textContent=msg;
+
+  const grades=document.getElementById('endGrades');
+  grades.innerHTML=`
+    <div class="ov-grade"><div class="gv">${avg}</div><div class="gl">Avg/Round</div></div>
+    <div class="ov-grade"><div class="gv">${best}</div><div class="gl">Best Round</div></div>
+    <div class="ov-grade"><div class="gv">${worst}</div><div class="gl">Worst Round</div></div>
+    <div class="ov-grade"><div class="gv">${QUESTIONS.length}</div><div class="gl">Questions</div></div>
+  `;
+
+  card.innerHTML='';
+  document.getElementById('endScreen').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
