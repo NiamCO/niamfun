@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Constellation Forge</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#020210;overflow:hidden;height:100vh;font-family:'DM Sans',sans-serif;cursor:crosshair;margin:0}
+canvas{display:block;position:fixed;inset:0}
+#bgCvs{z-index:0}
+#mainCvs{z-index:1}
+
+.toolbar{
+  position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
+  display:flex;gap:3px;z-index:10;
+  background:rgba(2,2,16,.8);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:4px;
+}
+.tb{
+  padding:6px 14px;border-radius:10px;border:1px solid transparent;
+  background:none;color:rgba(255,255,255,.3);cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:.55rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:.5px;transition:all .1s;
+  display:flex;align-items:center;gap:4px;
+}
+.tb:hover{color:#fff;background:rgba(255,255,255,.04)}
+.tb.on{color:#fff;border-color:rgba(200,180,255,.2);background:rgba(200,180,255,.06)}
+.tb .ico{font-size:.85rem}
+
+/* Tooltip */
+.tooltip{
+  position:fixed;z-index:20;pointer-events:none;
+  background:rgba(5,5,20,.92);backdrop-filter:blur(12px);
+  border:1px solid rgba(200,180,255,.1);border-radius:12px;
+  padding:14px 18px;max-width:280px;
+  opacity:0;transform:translateY(6px);
+  transition:opacity .25s,transform .25s;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);
+}
+.tooltip.show{opacity:1;transform:translateY(0)}
+.tt-name{
+  font-family:'Newsreader',serif;font-size:1.1rem;font-weight:600;
+  color:#e8e0ff;margin-bottom:3px;font-style:italic;
+}
+.tt-stars{font-size:.5rem;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.tt-lore{font-size:.72rem;color:rgba(255,255,255,.45);line-height:1.6;font-style:italic}
+.tt-loading{font-size:.6rem;color:rgba(200,180,255,.4);display:flex;align-items:center;gap:5px}
+.tt-loading::before{content:'';width:6px;height:6px;border-radius:50%;border:1.5px solid rgba(200,180,255,.3);border-top-color:rgba(200,180,255,.8);animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.hud{
+  position:fixed;top:14px;left:14px;z-index:10;
+  display:flex;flex-direction:column;gap:4px;
+}
+.hud-box{
+  background:rgba(2,2,16,.7);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.04);border-radius:8px;
+  padding:6px 12px;
+}
+.hud-label{font-size:.42rem;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:1.5px;font-weight:600}
+.hud-val{font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:600;color:rgba(200,180,255,.6)}
+
+.title-box{
+  position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:10;
+  font-family:'Newsreader',serif;font-size:1rem;font-weight:600;
+  color:rgba(200,180,255,.25);letter-spacing:1px;
+  display:flex;align-items:center;gap:6px;
+}
+.title-box .ico{font-size:1.2rem}
+</style>
+</head>
+<body>
+
+<canvas id="bgCvs"></canvas>
+<canvas id="mainCvs"></canvas>
+
+<div class="title-box"><span class="ico">✨</span>Constellation Forge</div>
+
+<div class="hud">
+  <div class="hud-box"><span class="hud-label">Stars</span><div class="hud-val" id="starCount">0</div></div>
+  <div class="hud-box"><span class="hud-label">Constellations</span><div class="hud-val" id="conCount">0</div></div>
+</div>
+
+<div class="toolbar">
+  <button class="tb on" data-tool="star"><span class="ico">⭐</span>Place Star</button>
+  <button class="tb" data-tool="bigstar"><span class="ico">🌟</span>Bright Star</button>
+  <button class="tb" data-tool="supergiant"><span class="ico">💫</span>Supergiant</button>
+  <button class="tb" data-tool="erase"><span class="ico">🧹</span>Erase</button>
+  <button class="tb" data-tool="clear"><span class="ico">🗑️</span>Clear Sky</button>
+</div>
+
+<div class="tooltip" id="tooltip">
+  <div class="tt-name" id="ttName"></div>
+  <div class="tt-stars" id="ttStars"></div>
+  <div class="tt-lore" id="ttLore"></div>
+</div>
+
+<script>
+const MK='adsqrtJK4Yjm9gcWTUpjK67Ztw0h5gsf';
+const BG=document.getElementById('bgCvs'),BX=BG.getContext('2d');
+const MC=document.getElementById('mainCvs'),MX=MC.getContext('2d');
+let W,H;
+function resize(){W=BG.width=MC.width=innerWidth;H=BG.height=MC.height=innerHeight;drawBg()}
+resize();addEventListener('resize',resize);
+
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+let userStars=[];     // {x,y,size,brightness,twinklePhase,color}
+let constellations=[]; // {stars:[], lines:[], name, lore, color, loadingLore}
+let tool='star';
+let mx=0,my=0;
+let hoveredCon=null;
+let tooltipEl=document.getElementById('tooltip');
+let idC=0;
+
+const CON_DIST=160;   // max distance to connect stars
+const MIN_STARS=3;     // min stars to form constellation
+const COLORS=[
+  {h:220,s:60,l:70,name:'blue'},
+  {h:260,s:50,l:75,name:'violet'},
+  {h:40,s:70,l:75,name:'gold'},
+  {h:180,s:50,l:70,name:'teal'},
+  {h:340,s:50,l:75,name:'rose'},
+  {h:140,s:40,l:70,name:'sage'},
+  {h:20,s:60,l:70,name:'amber'},
+  {h:280,s:60,l:75,name:'purple'},
+];
+
+// ═══════════════════════════════════════════
+//  BACKGROUND - static deep space
+// ═══════════════════════════════════════════
+let bgStars=[];
+for(let i=0;i<500;i++){
+  bgStars.push({
+    x:Math.random()*3000,y:Math.random()*2000,
+    r:Math.random()<0.05?Math.random()*1.5+0.8:Math.random()*0.8+0.2,
+    b:Math.random(),phase:Math.random()*Math.PI*2,
+    twinkleSpeed:0.5+Math.random()*2,
+  });
+}
+
+function drawBg(){
+  // Deep space gradient
+  const g=BX.createRadialGradient(W*0.3,H*0.4,0,W*0.5,H*0.5,Math.max(W,H));
+  g.addColorStop(0,'#0a0820');
+  g.addColorStop(0.4,'#060414');
+  g.addColorStop(1,'#020210');
+  BX.fillStyle=g;BX.fillRect(0,0,W,H);
+  
+  // Nebula clouds
+  const nebulae=[
+    {x:W*0.2,y:H*0.3,r:250,h:260,a:0.03},
+    {x:W*0.75,y:H*0.6,r:300,h:340,a:0.02},
+    {x:W*0.5,y:H*0.15,r:200,h:200,a:0.025},
+  ];
+  nebulae.forEach(n=>{
+    const ng=BX.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r);
+    ng.addColorStop(0,`hsla(${n.h},50%,30%,${n.a})`);
+    ng.addColorStop(0.5,`hsla(${n.h+20},40%,20%,${n.a*0.5})`);
+    ng.addColorStop(1,'transparent');
+    BX.fillStyle=ng;BX.fillRect(0,0,W,H);
+  });
+}
+
+// ═══════════════════════════════════════════
+//  TOOLBAR
+// ═══════════════════════════════════════════
+document.querySelectorAll('.tb').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(btn.dataset.tool==='clear'){
+      userStars=[];constellations=[];updateCounts();return;
+    }
+    document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    tool=btn.dataset.tool;
+  });
+});
+
+// ═══════════════════════════════════════════
+//  INPUT
+// ═══════════════════════════════════════════
+MC.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;checkHover()});
+MC.addEventListener('click',e=>{
+  if(tool==='erase'){
+    // Remove nearby star
+    const idx=userStars.findIndex(s=>Math.hypot(s.x-e.clientX,s.y-e.clientY)<20);
+    if(idx>=0){
+      userStars.splice(idx,1);
+      rebuildConstellations();
+    }
+    return;
+  }
+  placeStar(e.clientX,e.clientY);
+});
+
+MC.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  const t=e.touches[0];
+  mx=t.clientX;my=t.clientY;
+  if(tool==='erase'){
+    const idx=userStars.findIndex(s=>Math.hypot(s.x-mx,s.y-my)<25);
+    if(idx>=0){userStars.splice(idx,1);rebuildConstellations()}
+  } else {
+    placeStar(mx,my);
+  }
+},{passive:false});
+
+function placeStar(x,y){
+  const sizeMap={star:2,bigstar:3.5,supergiant:5.5};
+  const brightMap={star:0.7,bigstar:0.9,supergiant:1};
+  const colorVariants=['#fff','#ffe8cc','#cce0ff','#ffffcc','#ffd4e8','#ccffee'];
+  
+  userStars.push({
+    id:++idC,
+    x,y,
+    size:sizeMap[tool]||2,
+    brightness:brightMap[tool]||0.7,
+    twinklePhase:Math.random()*Math.PI*2,
+    twinkleSpeed:1+Math.random()*2,
+    color:colorVariants[Math.floor(Math.random()*colorVariants.length)],
+    placedAt:performance.now(),
+  });
+  
+  rebuildConstellations();
+}
+
+// ═══════════════════════════════════════════
+//  CONSTELLATION DETECTION (clustering)
+// ═══════════════════════════════════════════
+function rebuildConstellations(){
+  // Graph-based clustering: connect stars within CON_DIST, find connected components
+  const n=userStars.length;
+  const visited=new Set();
+  const oldCons=new Map(); // preserve existing names/lore by star set
+  constellations.forEach(c=>{
+    const key=c.stars.map(s=>s.id).sort().join(',');
+    oldCons.set(key,{name:c.name,lore:c.lore});
+  });
+  
+  constellations=[];
+  
+  for(let i=0;i<n;i++){
+    if(visited.has(i))continue;
+    // BFS to find cluster
+    const cluster=[i];
+    const queue=[i];
+    visited.add(i);
+    while(queue.length){
+      const curr=queue.shift();
+      for(let j=0;j<n;j++){
+        if(visited.has(j))continue;
+        if(Math.hypot(userStars[curr].x-userStars[j].x,userStars[curr].y-userStars[j].y)<CON_DIST){
+          visited.add(j);
+          cluster.push(j);
+          queue.push(j);
+        }
+      }
+    }
+    
+    if(cluster.length>=MIN_STARS){
+      const clusterStars=cluster.map(i=>userStars[i]);
+      
+      // Build MST-like lines (connect nearest unconnected)
+      const lines=[];
+      const connected=new Set([cluster[0]]);
+      while(connected.size<cluster.length){
+        let bestD=Infinity,bestA=-1,bestB=-1;
+        for(const a of connected){
+          for(const b of cluster){
+            if(connected.has(b))continue;
+            const d=Math.hypot(userStars[a].x-userStars[b].x,userStars[a].y-userStars[b].y);
+            if(d<bestD){bestD=d;bestA=a;bestB=b}
+          }
+        }
+        if(bestB>=0){
+          connected.add(bestB);
+          lines.push([bestA,bestB]);
+        } else break;
+      }
+      // Add a few extra connections for visual interest
+      for(const a of cluster){
+        for(const b of cluster){
+          if(a>=b)continue;
+          const d=Math.hypot(userStars[a].x-userStars[b].x,userStars[a].y-userStars[b].y);
+          if(d<CON_DIST*0.6&&!lines.some(l=>(l[0]===a&&l[1]===b)||(l[0]===b&&l[1]===a))){
+            if(Math.random()<0.3) lines.push([a,b]);
+          }
+        }
+      }
+      
+      const color=COLORS[constellations.length%COLORS.length];
+      
+      // Check if we have existing name/lore
+      const key=clusterStars.map(s=>s.id).sort().join(',');
+      const existing=oldCons.get(key);
+      
+      const con={
+        stars:clusterStars,
+        indices:cluster,
+        lines,
+        color,
+        name:existing?existing.name:null,
+        lore:existing?existing.lore:null,
+        loadingLore:false,
+      };
+      
+      if(!con.name){
+        generateName(con);
+      }
+      
+      constellations.push(con);
+    }
+  }
+  
+  updateCounts();
+}
+
+function updateCounts(){
+  document.getElementById('starCount').textContent=userStars.length;
+  document.getElementById('conCount').textContent=constellations.length;
+}
+
+// ═══════════════════════════════════════════
+//  AI NAME + LORE GENERATION
+// ═══════════════════════════════════════════
+async function generateName(con){
+  // Immediate placeholder name based on shape
+  const cx=con.stars.reduce((s,p)=>s+p.x,0)/con.stars.length;
+  const cy=con.stars.reduce((s,p)=>s+p.y,0)/con.stars.length;
+  const spread=Math.max(...con.stars.map(s=>Math.hypot(s.x-cx,s.y-cy)));
+  const isWide=spread>100;
+  const n=con.stars.length;
+  
+  // Generate with AI
+  con.loadingLore=true;
+  con.name='...';
+  
+  try{
+    const r=await fetch('https://api.mistral.ai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+MK},
+      body:JSON.stringify({
+        model:'mistral-small-latest',
+        messages:[{role:'user',content:`You are naming a constellation of ${n} stars in the night sky. It is ${isWide?'spread wide':'compact'}. Invent a mythological name and a 1-2 sentence origin myth.
+
+Reply ONLY with JSON: {"name":"Constellation Name","lore":"Brief mythological origin story, 1-2 sentences max."}
+
+Rules:
+- Name should sound ancient/mythological (Latin, Greek, Arabic, or invented)
+- Lore should be evocative and mysterious, like real constellation myths
+- Keep lore to 1-2 short sentences
+- Be creative and unique every time
+- ONLY output JSON`}],
+        max_tokens:100,temperature:1.0,
+      })
+    });
+    if(r.ok){
+      const d=await r.json();
+      const txt=d.choices[0].message.content.trim();
+      const m=txt.match(/\{[\s\S]*?\}/);
+      if(m){
+        const p=JSON.parse(m[0]);
+        con.name=p.name||'Unknown Stars';
+        con.lore=p.lore||'Its origin is lost to time.';
+      }
+    }
+  }catch(e){
+    con.name=fallbackName();
+    con.lore='Ancient stargazers whispered its name, but the wind carried it away.';
+  }
+  con.loadingLore=false;
+}
+
+function fallbackName(){
+  const prefixes=['Astra','Vela','Nox','Lyra','Orion','Draco','Cael','Ignis','Umbra','Stella','Zephyr','Aurum','Nyx'];
+  const suffixes=['is','us','a','um','ae','or','ix','ia','on','es'];
+  return prefixes[Math.floor(Math.random()*prefixes.length)]+suffixes[Math.floor(Math.random()*suffixes.length)];
+}
+
+// ═══════════════════════════════════════════
+//  HOVER DETECTION
+// ═══════════════════════════════════════════
+function checkHover(){
+  hoveredCon=null;
+  for(const con of constellations){
+    for(const s of con.stars){
+      if(Math.hypot(s.x-mx,s.y-my)<25){
+        hoveredCon=con;
+        break;
+      }
+    }
+    if(hoveredCon)break;
+  }
+  
+  if(hoveredCon&&hoveredCon.name){
+    const tt=tooltipEl;
+    document.getElementById('ttName').textContent=hoveredCon.name;
+    document.getElementById('ttStars').textContent=hoveredCon.stars.length+' stars · '+hoveredCon.color.name+' constellation';
+    
+    if(hoveredCon.loadingLore){
+      document.getElementById('ttLore').innerHTML='<div class="tt-loading">Divining the myths...</div>';
+    } else {
+      document.getElementById('ttLore').textContent=hoveredCon.lore||'';
+    }
+    
+    // Position tooltip
+    let tx=mx+18,ty=my-10;
+    if(tx+290>W)tx=mx-290;
+    if(ty+120>H)ty=my-120;
+    if(ty<10)ty=10;
+    tt.style.left=tx+'px';tt.style.top=ty+'px';
+    tt.classList.add('show');
+  } else {
+    tooltipEl.classList.remove('show');
+  }
+}
+
+// ═══════════════════════════════════════════
+//  RENDER (main canvas, redrawn every frame)
+// ═══════════════════════════════════════════
+function render(){
+  const t=performance.now()*0.001;
+  MX.clearRect(0,0,W,H);
+  
+  // Background stars twinkle
+  bgStars.forEach(s=>{
+    const bri=0.12+Math.sin(t*s.twinkleSpeed+s.phase)*0.1;
+    MX.beginPath();MX.arc(s.x%W,s.y%H,s.r,0,Math.PI*2);
+    MX.fillStyle=`rgba(200,210,230,${bri})`;MX.fill();
+  });
+  
+  // ─── Constellation lines ───
+  constellations.forEach(con=>{
+    const isHovered=con===hoveredCon;
+    const h=con.color.h,s=con.color.s,l=con.color.l;
+    const lineAlpha=isHovered?0.5:0.2;
+    const glowAlpha=isHovered?0.15:0.05;
+    
+    // Glow lines
+    MX.strokeStyle=`hsla(${h},${s}%,${l}%,${glowAlpha})`;
+    MX.lineWidth=8;MX.lineCap='round';
+    con.lines.forEach(([ai,bi])=>{
+      const a=userStars[ai],b=userStars[bi];
+      MX.beginPath();MX.moveTo(a.x,a.y);MX.lineTo(b.x,b.y);MX.stroke();
+    });
+    
+    // Main lines
+    MX.strokeStyle=`hsla(${h},${s}%,${l}%,${lineAlpha})`;
+    MX.lineWidth=1.5;
+    MX.setLineDash(isHovered?[]:[4,6]);
+    con.lines.forEach(([ai,bi])=>{
+      const a=userStars[ai],b=userStars[bi];
+      MX.beginPath();MX.moveTo(a.x,a.y);MX.lineTo(b.x,b.y);MX.stroke();
+    });
+    MX.setLineDash([]);
+    
+    // Constellation name label (when hovered)
+    if(isHovered&&con.name&&con.name!=='...'){
+      const cx=con.stars.reduce((s,p)=>s+p.x,0)/con.stars.length;
+      const cy=con.stars.reduce((s,p)=>s+p.y,0)/con.stars.length-30;
+      MX.font="italic 600 14px 'Newsreader',serif";
+      MX.textAlign='center';
+      MX.fillStyle=`hsla(${h},${s}%,${l+15}%,0.6)`;
+      MX.shadowColor=`hsla(${h},${s}%,${l}%,0.3)`;MX.shadowBlur=10;
+      MX.fillText(con.name,cx,cy);
+      MX.shadowBlur=0;MX.textAlign='left';
+    }
+  });
+  
+  // ─── User stars ───
+  userStars.forEach(s=>{
+    const twinkle=0.6+Math.sin(t*s.twinkleSpeed+s.twinklePhase)*0.4;
+    const bri=s.brightness*twinkle;
+    const age=Math.min(1,(performance.now()-s.placedAt)/500); // fade in
+    const r=s.size*age;
+    
+    // Determine if star belongs to a hovered constellation
+    const inHovered=hoveredCon&&hoveredCon.stars.includes(s);
+    const glow=inHovered?2:1;
+    
+    // Outer glow
+    MX.beginPath();MX.arc(s.x,s.y,r*4*glow,0,Math.PI*2);
+    const gg=MX.createRadialGradient(s.x,s.y,0,s.x,s.y,r*4*glow);
+    gg.addColorStop(0,`rgba(255,255,255,${bri*0.15*glow})`);
+    gg.addColorStop(1,'transparent');
+    MX.fillStyle=gg;MX.fill();
+    
+    // Star body
+    MX.beginPath();MX.arc(s.x,s.y,r,0,Math.PI*2);
+    MX.fillStyle=s.color;
+    MX.globalAlpha=bri*age;
+    MX.shadowColor=s.color;MX.shadowBlur=r*3*glow;
+    MX.fill();
+    MX.shadowBlur=0;MX.globalAlpha=1;
+    
+    // Cross diffraction spikes for bigger stars
+    if(s.size>3){
+      MX.strokeStyle=`rgba(255,255,255,${bri*0.2*age})`;
+      MX.lineWidth=0.5;
+      const spikeLen=r*4*twinkle;
+      MX.beginPath();MX.moveTo(s.x-spikeLen,s.y);MX.lineTo(s.x+spikeLen,s.y);MX.stroke();
+      MX.beginPath();MX.moveTo(s.x,s.y-spikeLen);MX.lineTo(s.x,s.y+spikeLen);MX.stroke();
+      if(s.size>5){
+        const d=spikeLen*0.7;
+        MX.beginPath();MX.moveTo(s.x-d,s.y-d);MX.lineTo(s.x+d,s.y+d);MX.stroke();
+        MX.beginPath();MX.moveTo(s.x+d,s.y-d);MX.lineTo(s.x-d,s.y+d);MX.stroke();
+      }
+    }
+  });
+  
+  // Cursor preview
+  if(tool==='star'||tool==='bigstar'||tool==='supergiant'){
+    const pr=tool==='supergiant'?5:tool==='bigstar'?3.5:2;
+    MX.beginPath();MX.arc(mx,my,pr+2,0,Math.PI*2);
+    MX.strokeStyle='rgba(255,255,255,0.15)';MX.lineWidth=1;MX.stroke();
+    
+    // Show potential connections
+    MX.strokeStyle='rgba(200,180,255,0.06)';MX.lineWidth=1;MX.setLineDash([3,5]);
+    userStars.forEach(s=>{
+      if(Math.hypot(s.x-mx,s.y-my)<CON_DIST){
+        MX.beginPath();MX.moveTo(mx,my);MX.lineTo(s.x,s.y);MX.stroke();
+      }
+    });
+    MX.setLineDash([]);
+  }
+  
+  // Erase cursor
+  if(tool==='erase'){
+    MX.beginPath();MX.arc(mx,my,20,0,Math.PI*2);
+    MX.strokeStyle='rgba(255,100,100,0.2)';MX.lineWidth=1.5;MX.setLineDash([3,3]);MX.stroke();MX.setLineDash([]);
+  }
+  
+  requestAnimationFrame(render);
+}
+render();
+</script>
+</body>
+</html>
