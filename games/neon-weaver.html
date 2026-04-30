@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neon Weaver</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#04040a;overflow:hidden;height:100vh;font-family:'DM Sans',sans-serif;cursor:crosshair}
+canvas{display:block}
+
+.toolbar{
+  position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  display:flex;gap:4px;z-index:10;
+  background:rgba(10,10,18,.85);backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;padding:5px;
+}
+.tb{
+  padding:7px 14px;border-radius:10px;border:1px solid transparent;
+  background:none;color:rgba(255,255,255,.35);cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:.6rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:.6px;transition:all .12s;
+  display:flex;align-items:center;gap:5px;
+}
+.tb:hover{color:#fff;background:rgba(255,255,255,.04)}
+.tb.on{color:#fff;border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.06)}
+.tb .dot{width:10px;height:10px;border-radius:50%}
+.tb .ico{font-size:.85rem}
+
+.hint{
+  position:fixed;top:16px;left:50%;transform:translateX(-50%);
+  font-size:.6rem;color:rgba(255,255,255,.2);z-index:10;
+  background:rgba(10,10,18,.6);padding:5px 14px;border-radius:20px;
+  border:1px solid rgba(255,255,255,.04);
+  pointer-events:none;
+}
+
+.counter{
+  position:fixed;top:16px;right:16px;
+  font-size:.6rem;color:rgba(255,255,255,.2);z-index:10;
+  background:rgba(10,10,18,.6);padding:5px 14px;border-radius:20px;
+  border:1px solid rgba(255,255,255,.04);
+}
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div class="hint">Click to place nodes · They auto-connect · Double-click to clear</div>
+<div class="counter">Nodes: <span id="nodeCount">0</span> · Threads: <span id="threadCount">0</span></div>
+
+<div class="toolbar">
+  <button class="tb on" data-mode="rainbow"><span class="ico">🌈</span>Rainbow</button>
+  <button class="tb" data-mode="cyan"><span class="dot" style="background:#0ff;box-shadow:0 0 6px #0ff"></span>Cyan</button>
+  <button class="tb" data-mode="magenta"><span class="dot" style="background:#f0f;box-shadow:0 0 6px #f0f"></span>Magenta</button>
+  <button class="tb" data-mode="fire"><span class="dot" style="background:#f80;box-shadow:0 0 6px #f80"></span>Fire</button>
+  <button class="tb" data-mode="electric"><span class="dot" style="background:#88f;box-shadow:0 0 6px #88f"></span>Electric</button>
+  <button class="tb" data-mode="nature"><span class="dot" style="background:#4f8;box-shadow:0 0 6px #4f8"></span>Nature</button>
+  <button class="tb" data-mode="clear"><span class="ico">🗑️</span>Clear</button>
+</div>
+
+<script>
+const C=document.getElementById('c'),X=C.getContext('2d');
+let W,H;
+function resize(){W=C.width=innerWidth;H=C.height=innerHeight}
+resize();addEventListener('resize',resize);
+
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+let nodes=[]; // {x, y, vx, vy, pinned, r}
+let threads=[]; // {a, b, restLen, color}
+let colorMode='rainbow';
+let mouseX=0,mouseY=0;
+let dragNode=null;
+let hoverNode=null;
+
+const MAX_CONNECT_DIST=250;
+const NODE_R=6;
+
+const COLOR_SCHEMES={
+  rainbow:  (i,t)=>`hsl(${(i*40+t*30)%360},100%,65%)`,
+  cyan:     (i,t)=>`hsl(${180+Math.sin(t+i)*15},100%,${55+Math.sin(t*2+i)*10}%)`,
+  magenta:  (i,t)=>`hsl(${300+Math.sin(t+i)*20},100%,${55+Math.sin(t*2+i)*10}%)`,
+  fire:     (i,t)=>`hsl(${15+Math.sin(t+i)*15},100%,${50+Math.sin(t*2+i)*10}%)`,
+  electric: (i,t)=>`hsl(${240+Math.sin(t+i)*30},${80+Math.sin(t)*20}%,${60+Math.sin(t*3+i)*10}%)`,
+  nature:   (i,t)=>`hsl(${110+Math.sin(t+i)*30},${70+Math.sin(t)*15}%,${45+Math.sin(t*2+i)*10}%)`,
+};
+
+// ═══════════════════════════════════════
+//  TOOLBAR
+// ═══════════════════════════════════════
+document.querySelectorAll('.tb').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(btn.dataset.mode==='clear'){
+      nodes=[];threads=[];updateCounters();return;
+    }
+    document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    colorMode=btn.dataset.mode;
+  });
+});
+
+// ═══════════════════════════════════════
+//  INPUT
+// ═══════════════════════════════════════
+C.addEventListener('mousedown',e=>{
+  const n=findNode(e.clientX,e.clientY);
+  if(n){
+    dragNode=n;
+    dragNode.pinned=true;
+  }
+});
+
+C.addEventListener('mousemove',e=>{
+  mouseX=e.clientX;mouseY=e.clientY;
+  hoverNode=findNode(mouseX,mouseY);
+  if(dragNode){
+    dragNode.x=mouseX;dragNode.y=mouseY;
+    dragNode.vx=0;dragNode.vy=0;
+  }
+});
+
+C.addEventListener('mouseup',e=>{
+  if(dragNode){
+    dragNode.pinned=false;
+    dragNode=null;
+    return;
+  }
+  addNode(e.clientX,e.clientY);
+});
+
+C.addEventListener('dblclick',()=>{
+  nodes=[];threads=[];updateCounters();
+});
+
+// Touch
+C.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  const t=e.touches[0];
+  const n=findNode(t.clientX,t.clientY);
+  if(n){dragNode=n;dragNode.pinned=true}
+  else addNode(t.clientX,t.clientY);
+},{passive:false});
+C.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  const t=e.touches[0];
+  mouseX=t.clientX;mouseY=t.clientY;
+  if(dragNode){dragNode.x=mouseX;dragNode.y=mouseY;dragNode.vx=0;dragNode.vy=0}
+},{passive:false});
+C.addEventListener('touchend',()=>{
+  if(dragNode){dragNode.pinned=false;dragNode=null}
+});
+
+function findNode(x,y){
+  for(const n of nodes){
+    if(Math.hypot(n.x-x,n.y-y)<NODE_R*3)return n;
+  }
+  return null;
+}
+
+function addNode(x,y){
+  const node={x,y,vx:0,vy:0,pinned:false,r:NODE_R,id:nodes.length};
+  
+  // Connect to nearby nodes
+  for(const other of nodes){
+    const d=Math.hypot(other.x-x,other.y-y);
+    if(d<MAX_CONNECT_DIST){
+      threads.push({
+        a:other,b:node,
+        restLen:d*0.6,
+        color:threads.length,
+        phase:Math.random()*Math.PI*2,
+        amplitude:3+Math.random()*8,
+        freq:1+Math.random()*2,
+      });
+    }
+  }
+  
+  nodes.push(node);
+  updateCounters();
+}
+
+function updateCounters(){
+  document.getElementById('nodeCount').textContent=nodes.length;
+  document.getElementById('threadCount').textContent=threads.length;
+}
+
+// ═══════════════════════════════════════
+//  PHYSICS
+// ═══════════════════════════════════════
+function physics(){
+  const GRAV=0.02;
+  const DAMP=0.97;
+  const SPRING=0.008;
+  
+  // Spring forces from threads
+  for(const t of threads){
+    const dx=t.b.x-t.a.x;
+    const dy=t.b.y-t.a.y;
+    const d=Math.hypot(dx,dy)||1;
+    const diff=d-t.restLen;
+    const f=diff*SPRING;
+    const fx=dx/d*f;
+    const fy=dy/d*f;
+    
+    if(!t.a.pinned){t.a.vx+=fx;t.a.vy+=fy}
+    if(!t.b.pinned){t.b.vx-=fx;t.b.vy-=fy}
+  }
+  
+  // Node repulsion (prevent clumping)
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i],b=nodes[j];
+      const dx=b.x-a.x,dy=b.y-a.y;
+      const d=Math.hypot(dx,dy)||1;
+      if(d<40){
+        const f=(40-d)*0.01;
+        const fx=dx/d*f,fy=dy/d*f;
+        if(!a.pinned){a.vx-=fx;a.vy-=fy}
+        if(!b.pinned){b.vx+=fx;b.vy+=fy}
+      }
+    }
+  }
+  
+  // Mouse attraction (subtle)
+  for(const n of nodes){
+    if(n.pinned)continue;
+    const dx=mouseX-n.x,dy=mouseY-n.y;
+    const d=Math.hypot(dx,dy)||1;
+    if(d<200){
+      n.vx+=dx/d*0.05;
+      n.vy+=dy/d*0.05;
+    }
+  }
+  
+  // Update positions
+  for(const n of nodes){
+    if(n.pinned)continue;
+    n.vy+=GRAV;
+    n.vx*=DAMP;n.vy*=DAMP;
+    n.x+=n.vx;n.y+=n.vy;
+    
+    // Soft wall bounds
+    const pad=20;
+    if(n.x<pad){n.x=pad;n.vx*=-0.5}
+    if(n.x>W-pad){n.x=W-pad;n.vx*=-0.5}
+    if(n.y<pad){n.y=pad;n.vy*=-0.5}
+    if(n.y>H-pad){n.y=H-pad;n.vy*=-0.5}
+  }
+}
+
+// ═══════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════
+function render(){
+  const t=performance.now()*0.001;
+  
+  // Fade trail effect
+  X.fillStyle='rgba(4,4,10,0.15)';
+  X.fillRect(0,0,W,H);
+  
+  const getColor=COLOR_SCHEMES[colorMode]||COLOR_SCHEMES.rainbow;
+  
+  // Draw threads with sine wave vibration
+  for(const th of threads){
+    const ax=th.a.x,ay=th.a.y;
+    const bx=th.b.x,by=th.b.y;
+    const dx=bx-ax,dy=by-ay;
+    const len=Math.hypot(dx,dy)||1;
+    const nx=-dy/len,ny=dx/len; // perpendicular
+    
+    // Tension affects vibration
+    const tension=Math.abs(len-th.restLen)/th.restLen;
+    const amp=th.amplitude*(1-Math.min(1,tension*2));
+    
+    const color=getColor(th.color,t);
+    
+    // Draw vibrating thread as curve
+    X.beginPath();
+    const segments=Math.max(10,Math.floor(len/5));
+    
+    for(let i=0;i<=segments;i++){
+      const frac=i/segments;
+      const px=ax+dx*frac;
+      const py=ay+dy*frac;
+      
+      // Sine wave displacement (zero at endpoints)
+      const envelope=Math.sin(frac*Math.PI);
+      const wave=Math.sin(frac*Math.PI*th.freq*2+t*3+th.phase)*amp*envelope;
+      const wave2=Math.sin(frac*Math.PI*th.freq*3+t*4.7+th.phase)*amp*0.3*envelope;
+      
+      const fx=px+nx*(wave+wave2);
+      const fy=py+ny*(wave+wave2);
+      
+      i===0?X.moveTo(fx,fy):X.lineTo(fx,fy);
+    }
+    
+    // Glow layers
+    X.strokeStyle=color;
+    X.lineWidth=3;
+    X.globalAlpha=0.2;
+    X.shadowColor=color;
+    X.shadowBlur=20;
+    X.stroke();
+    
+    X.lineWidth=2;
+    X.globalAlpha=0.5;
+    X.shadowBlur=10;
+    X.stroke();
+    
+    X.lineWidth=1;
+    X.globalAlpha=0.9;
+    X.shadowBlur=4;
+    X.stroke();
+    
+    X.shadowBlur=0;
+    X.globalAlpha=1;
+  }
+  
+  // Draw nodes
+  for(let i=0;i<nodes.length;i++){
+    const n=nodes[i];
+    const isHover=n===hoverNode||n===dragNode;
+    const nodeColor=getColor(i,t);
+    
+    // Outer glow
+    X.beginPath();X.arc(n.x,n.y,n.r+(isHover?8:4),0,Math.PI*2);
+    X.fillStyle=nodeColor;
+    X.globalAlpha=isHover?0.2:0.08;
+    X.shadowColor=nodeColor;X.shadowBlur=isHover?20:10;
+    X.fill();
+    
+    // Core
+    X.beginPath();X.arc(n.x,n.y,n.r*(isHover?1.3:1),0,Math.PI*2);
+    X.fillStyle=nodeColor;
+    X.globalAlpha=1;
+    X.shadowBlur=8;
+    X.fill();
+    
+    // Bright center
+    X.beginPath();X.arc(n.x,n.y,n.r*0.35,0,Math.PI*2);
+    X.fillStyle='rgba(255,255,255,0.6)';
+    X.fill();
+    
+    X.shadowBlur=0;
+  }
+  
+  // Cursor glow
+  X.beginPath();X.arc(mouseX,mouseY,3,0,Math.PI*2);
+  X.fillStyle='rgba(255,255,255,0.15)';
+  X.fill();
+}
+
+// ═══════════════════════════════════════
+//  LOOP
+// ═══════════════════════════════════════
+function loop(){
+  physics();
+  render();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
