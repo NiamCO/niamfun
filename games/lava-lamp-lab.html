@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lava Lamp Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a10;overflow:hidden;height:100vh;font-family:'DM Sans',sans-serif;color:#fff;display:flex;align-items:center;justify-content:center;margin:0}
+
+.scene{display:flex;align-items:center;gap:30px;position:relative}
+
+/* Lamp body */
+.lamp-wrap{position:relative}
+.lamp-cap{
+  width:140px;height:24px;margin:0 auto;
+  background:linear-gradient(180deg,#555,#333,#444);
+  border-radius:12px 12px 4px 4px;
+  box-shadow:0 2px 8px rgba(0,0,0,.5);
+  position:relative;z-index:2;
+}
+.lamp-cap-bottom{
+  width:180px;height:30px;margin:0 auto;
+  background:linear-gradient(0deg,#444,#555,#3a3a3a);
+  border-radius:4px 4px 16px 16px;
+  box-shadow:0 4px 12px rgba(0,0,0,.5);
+  position:relative;z-index:2;
+}
+.lamp-glass{
+  width:160px;height:420px;margin:0 auto;
+  border-radius:80px/40px;
+  position:relative;overflow:hidden;
+  box-shadow:inset 0 0 30px rgba(0,0,0,.3),0 0 40px rgba(0,0,0,.3);
+  border:1px solid rgba(255,255,255,.03);
+}
+.lamp-glass canvas{display:block;width:100%;height:100%}
+
+/* Glass reflection */
+.glass-reflect{
+  position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(255,255,255,.06) 0%,transparent 30%,transparent 70%,rgba(255,255,255,.02) 100%);
+  border-radius:80px/40px;
+  pointer-events:none;z-index:3;
+}
+.glass-shine{
+  position:absolute;top:10%;left:12%;width:15%;height:40%;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),transparent);
+  border-radius:50%;pointer-events:none;z-index:3;
+}
+
+/* Controls panel */
+.controls{
+  display:flex;flex-direction:column;gap:10px;
+  min-width:200px;
+}
+.ctrl-title{font-size:1rem;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.ctrl-title .ico{font-size:1.2rem}
+
+.ctrl-group{
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
+  border-radius:10px;padding:12px 14px;
+}
+.ctrl-label{font-size:.55rem;font-weight:600;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.ctrl-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ctrl-row:last-child{margin-bottom:0}
+.ctrl-row label{font-size:.68rem;color:rgba(255,255,255,.45);min-width:65px}
+.ctrl-row input[type=range]{flex:1;-webkit-appearance:none;height:4px;background:rgba(255,255,255,.08);border-radius:2px;outline:none}
+.ctrl-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;cursor:pointer;border:2px solid #0a0a10;box-shadow:0 0 6px rgba(255,255,255,.2)}
+.ctrl-row .val{font-family:monospace;font-size:.65rem;color:rgba(255,255,255,.5);min-width:24px;text-align:right}
+
+/* Presets */
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.preset{
+  padding:8px 6px;border-radius:8px;border:1px solid rgba(255,255,255,.05);
+  background:rgba(255,255,255,.02);cursor:pointer;text-align:center;
+  font-size:.6rem;font-weight:600;color:rgba(255,255,255,.4);
+  transition:all .12s;display:flex;align-items:center;justify-content:center;gap:4px;
+}
+.preset:hover{border-color:rgba(255,255,255,.12);color:#fff}
+.preset.on{border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#fff}
+.preset .pdot{width:12px;height:12px;border-radius:50%}
+
+@media(max-width:600px){
+  .scene{flex-direction:column;gap:16px}
+  .controls{flex-direction:row;flex-wrap:wrap;min-width:0;max-width:90vw}
+  .ctrl-group{flex:1;min-width:140px}
+  .lamp-glass{height:300px;width:120px}
+  .lamp-cap{width:105px}.lamp-cap-bottom{width:140px}
+}
+</style>
+</head>
+<body>
+
+<div class="scene">
+  <div class="lamp-wrap">
+    <div class="lamp-cap"></div>
+    <div class="lamp-glass">
+      <canvas id="lava"></canvas>
+      <div class="glass-reflect"></div>
+      <div class="glass-shine"></div>
+    </div>
+    <div class="lamp-cap-bottom"></div>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl-title"><span class="ico">🫠</span> Lava Lamp Lab</div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Physics</div>
+      <div class="ctrl-row"><label>Blobs</label><input type="range" id="blobCount" min="4" max="20" value="8"><span class="val" id="vBlobs">8</span></div>
+      <div class="ctrl-row"><label>Viscosity</label><input type="range" id="viscosity" min="1" max="20" value="8"><span class="val" id="vVisc">8</span></div>
+      <div class="ctrl-row"><label>Heat</label><input type="range" id="heat" min="1" max="20" value="10"><span class="val" id="vHeat">10</span></div>
+      <div class="ctrl-row"><label>Blob Size</label><input type="range" id="blobSize" min="3" max="15" value="7"><span class="val" id="vSize">7</span></div>
+      <div class="ctrl-row"><label>Speed</label><input type="range" id="speed" min="1" max="10" value="5"><span class="val" id="vSpeed">5</span></div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Color Preset</div>
+      <div class="presets" id="presets">
+        <div class="preset on" data-p="classic"><div class="pdot" style="background:linear-gradient(135deg,#ff3300,#ff6600)"></div>Classic</div>
+        <div class="preset" data-p="ocean"><div class="pdot" style="background:linear-gradient(135deg,#0066ff,#00ccff)"></div>Ocean</div>
+        <div class="preset" data-p="toxic"><div class="pdot" style="background:linear-gradient(135deg,#33ff00,#aaff00)"></div>Toxic</div>
+        <div class="preset" data-p="sunset"><div class="pdot" style="background:linear-gradient(135deg,#ff0066,#ff9900)"></div>Sunset</div>
+        <div class="preset" data-p="purple"><div class="pdot" style="background:linear-gradient(135deg,#8800ff,#cc44ff)"></div>Purple</div>
+        <div class="preset" data-p="golden"><div class="pdot" style="background:linear-gradient(135deg,#ffaa00,#ffdd44)"></div>Golden</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const LC=document.getElementById('lava');
+const LX=LC.getContext('2d');
+const LW=320,LH=840; // internal resolution (2x for retina)
+LC.width=LW;LC.height=LH;
+
+// ═══════════════════════════════════════════
+//  COLOR PRESETS
+// ═══════════════════════════════════════════
+const PRESETS={
+  classic: {blob:[255,60,0],  blob2:[255,120,20], liquid:[20,0,40],   glow:[255,80,0]},
+  ocean:   {blob:[0,100,255], blob2:[0,200,255],  liquid:[0,10,30],   glow:[0,120,255]},
+  toxic:   {blob:[50,255,0],  blob2:[170,255,0],  liquid:[5,20,5],    glow:[80,255,0]},
+  sunset:  {blob:[255,0,100], blob2:[255,150,0],  liquid:[30,5,15],   glow:[255,50,80]},
+  purple:  {blob:[140,0,255], blob2:[200,70,255], liquid:[15,0,30],   glow:[160,40,255]},
+  golden:  {blob:[255,170,0], blob2:[255,220,70], liquid:[25,15,0],   glow:[255,180,20]},
+};
+
+var preset='classic';
+var colors=PRESETS.classic;
+var blobCount=8;
+var viscosity=8;
+var heatVal=10;
+var blobSizeVal=7;
+var speedVal=5;
+
+// ═══════════════════════════════════════════
+//  BLOBS
+// ═══════════════════════════════════════════
+var blobs=[];
+
+function initBlobs(){
+  blobs=[];
+  for(let i=0;i<blobCount;i++){
+    blobs.push({
+      x:LW*0.2+Math.random()*LW*0.6,
+      y:LH*0.2+Math.random()*LH*0.6,
+      r:blobSizeVal*3+Math.random()*blobSizeVal*4,
+      vx:(Math.random()-.5)*0.5,
+      vy:(Math.random()-.5)*2,
+      phase:Math.random()*Math.PI*2,
+      wobbleX:Math.random()*Math.PI*2,
+      wobbleSpeed:0.01+Math.random()*0.02,
+      heatResponse:0.5+Math.random()*0.8,
+    });
+  }
+}
+initBlobs();
+
+// ═══════════════════════════════════════════
+//  PHYSICS
+// ═══════════════════════════════════════════
+function updateBlobs(){
+  const spd=speedVal*0.1;
+  const heatY=LH*0.9; // heat source at bottom
+  const coolY=LH*0.1; // cooling at top
+  const heatStrength=heatVal*0.015;
+  const visc=viscosity*0.005;
+  const drag=1-visc;
+
+  for(const b of blobs){
+    // Heat from bottom pushes up
+    const distToHeat=Math.abs(b.y-heatY)/LH;
+    const distToCool=Math.abs(b.y-coolY)/LH;
+
+    // Buoyancy: hot blobs rise, cold blobs sink
+    if(distToHeat<0.3){
+      // Near heat source — expand and rise
+      b.vy-=heatStrength*b.heatResponse*(1-distToHeat/0.3)*spd;
+      b.r+=(blobSizeVal*5-b.r)*0.002; // expand
+    } else if(distToCool<0.3){
+      // Near top — cool and sink
+      b.vy+=heatStrength*0.3*b.heatResponse*(1-distToCool/0.3)*spd;
+      b.r+=(blobSizeVal*2.5-b.r)*0.003; // shrink
+    }
+
+    // Wobble
+    b.wobbleX+=b.wobbleSpeed*spd;
+    b.vx+=Math.sin(b.wobbleX)*0.08*spd;
+
+    // Gentle gravity (blobs are slightly denser than liquid)
+    b.vy+=0.02*spd;
+
+    // Drag
+    b.vx*=drag;
+    b.vy*=drag;
+
+    // Move
+    b.x+=b.vx*spd;
+    b.y+=b.vy*spd;
+
+    // Blob-blob repulsion
+    for(const other of blobs){
+      if(other===b)continue;
+      const dx=b.x-other.x,dy=b.y-other.y;
+      const d=Math.hypot(dx,dy);
+      const minD=b.r+other.r;
+      if(d<minD&&d>1){
+        const f=(minD-d)*0.02;
+        b.vx+=dx/d*f;b.vy+=dy/d*f;
+      }
+    }
+
+    // Wall containment (lamp shape — narrower at top and bottom)
+    const yPct=b.y/LH;
+    const taper=1-Math.pow(Math.abs(yPct-0.5)*2,3)*0.4; // narrow at ends
+    const wallL=LW*(0.5-taper*0.4);
+    const wallR=LW*(0.5+taper*0.4);
+
+    if(b.x-b.r<wallL){b.x=wallL+b.r;b.vx*=-0.3}
+    if(b.x+b.r>wallR){b.x=wallR-b.r;b.vx*=-0.3}
+    if(b.y-b.r<20){b.y=20+b.r;b.vy*=-0.2}
+    if(b.y+b.r>LH-20){b.y=LH-20-b.r;b.vy*=-0.3}
+  }
+
+  // Adjust blob count
+  while(blobs.length<blobCount){
+    blobs.push({
+      x:LW*0.3+Math.random()*LW*0.4,
+      y:LH*0.5+Math.random()*LH*0.3,
+      r:blobSizeVal*3+Math.random()*blobSizeVal*3,
+      vx:0,vy:0,phase:Math.random()*Math.PI*2,
+      wobbleX:Math.random()*Math.PI*2,wobbleSpeed:0.01+Math.random()*0.02,
+      heatResponse:0.5+Math.random()*0.8,
+    });
+  }
+  while(blobs.length>blobCount) blobs.pop();
+}
+
+// ═══════════════════════════════════════════
+//  METABALL RENDERING
+// ═══════════════════════════════════════════
+function render(){
+  const c=colors;
+
+  // Background liquid
+  const bgGrad=LX.createLinearGradient(0,0,0,LH);
+  bgGrad.addColorStop(0,`rgb(${c.liquid[0]},${c.liquid[1]},${c.liquid[2]})`);
+  bgGrad.addColorStop(0.5,`rgb(${c.liquid[0]+5},${c.liquid[1]+3},${c.liquid[2]+8})`);
+  bgGrad.addColorStop(1,`rgb(${c.liquid[0]+10},${c.liquid[1]+5},${c.liquid[2]+3})`);
+  LX.fillStyle=bgGrad;
+  LX.fillRect(0,0,LW,LH);
+
+  // Render metaballs using image data for smooth blending
+  const imgData=LX.getImageData(0,0,LW,LH);
+  const data=imgData.data;
+
+  const step=2; // render every 2nd pixel for performance
+  for(let py=0;py<LH;py+=step){
+    for(let px=0;px<LW;px+=step){
+      // Metaball field function
+      let field=0;
+      for(const b of blobs){
+        const dx=px-b.x,dy=py-b.y;
+        const dSq=dx*dx+dy*dy;
+        field+=b.r*b.r/Math.max(dSq,1);
+      }
+
+      if(field>0.8){
+        // Inside blob
+        const intensity=Math.min(1,(field-0.8)*3);
+        const highlight=Math.min(1,(field-1.5)*2);
+
+        // Blend between blob color and highlight
+        const r=c.blob[0]+(c.blob2[0]-c.blob[0])*highlight*0.5+highlight*50;
+        const g=c.blob[1]+(c.blob2[1]-c.blob[1])*highlight*0.5+highlight*30;
+        const b2=c.blob[2]+(c.blob2[2]-c.blob[2])*highlight*0.5+highlight*20;
+        const a=Math.min(255,intensity*280);
+
+        // Write pixels (fill step×step block)
+        for(let sy=0;sy<step&&py+sy<LH;sy++){
+          for(let sx=0;sx<step&&px+sx<LW;sx++){
+            const idx=((py+sy)*LW+(px+sx))*4;
+            // Alpha blend over background
+            const srcA=a/255;
+            data[idx]=data[idx]*(1-srcA)+r*srcA;
+            data[idx+1]=data[idx+1]*(1-srcA)+g*srcA;
+            data[idx+2]=data[idx+2]*(1-srcA)+b2*srcA;
+          }
+        }
+      }
+      // Edge glow
+      else if(field>0.5){
+        const glow=(field-0.5)*0.3;
+        for(let sy=0;sy<step&&py+sy<LH;sy++){
+          for(let sx=0;sx<step&&px+sx<LW;sx++){
+            const idx=((py+sy)*LW+(px+sx))*4;
+            data[idx]+=c.glow[0]*glow*0.3;
+            data[idx+1]+=c.glow[1]*glow*0.3;
+            data[idx+2]+=c.glow[2]*glow*0.3;
+          }
+        }
+      }
+    }
+  }
+
+  LX.putImageData(imgData,0,0);
+
+  // Heat glow at bottom
+  const hg=LX.createRadialGradient(LW/2,LH,0,LW/2,LH,LH*0.3);
+  hg.addColorStop(0,`rgba(${c.glow[0]},${c.glow[1]},${c.glow[2]},0.08)`);
+  hg.addColorStop(1,'transparent');
+  LX.fillStyle=hg;LX.fillRect(0,0,LW,LH);
+
+  // Subtle bubbles
+  const t=performance.now()*0.001;
+  LX.fillStyle=`rgba(255,255,255,0.03)`;
+  for(let i=0;i<5;i++){
+    const bx=LW*0.3+Math.sin(t*0.5+i*1.7)*LW*0.2;
+    const by=(LH-((t*20+i*137)%LH));
+    LX.beginPath();LX.arc(bx,by,1+Math.sin(i)*0.5,0,Math.PI*2);LX.fill();
+  }
+}
+
+// ═══════════════════════════════════════════
+//  CONTROLS
+// ═══════════════════════════════════════════
+function bind(id,vid,cb){
+  const sl=document.getElementById(id),vl=document.getElementById(vid);
+  sl.addEventListener('input',()=>{vl.textContent=sl.value;cb(+sl.value)});
+}
+bind('blobCount','vBlobs',v=>blobCount=v);
+bind('viscosity','vVisc',v=>viscosity=v);
+bind('heat','vHeat',v=>heatVal=v);
+bind('blobSize','vSize',v=>{blobSizeVal=v;blobs.forEach(b=>b.r=v*3+Math.random()*v*3)});
+bind('speed','vSpeed',v=>speedVal=v);
+
+document.querySelectorAll('.preset').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.preset').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    preset=btn.dataset.p;
+    colors=PRESETS[preset];
+  });
+});
+
+// ═══════════════════════════════════════════
+//  LOOP
+// ═══════════════════════════════════════════
+function loop(){
+  updateBlobs();
+  render();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
