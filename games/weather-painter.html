@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather Painter</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#1a2a3a;overflow:hidden;height:100vh;font-family:'DM Sans',sans-serif;color:#fff;margin:0;display:flex;flex-direction:column}
+canvas{flex:1;display:block;cursor:crosshair}
+
+.top{
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(10,18,28,.92);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.04);
+  padding:5px 14px;z-index:10;flex-shrink:0;
+}
+.top-left{display:flex;align-items:center;gap:10px}
+.title{font-size:.85rem;font-weight:700;color:#6db8ff;display:flex;align-items:center;gap:5px}
+.tools{display:flex;gap:2px}
+.tl{
+  padding:5px 11px;border-radius:7px;border:1px solid transparent;
+  background:none;color:rgba(255,255,255,.3);cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:.5rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:.4px;transition:all .1s;
+  display:flex;align-items:center;gap:4px;
+}
+.tl:hover{color:#fff;background:rgba(255,255,255,.03)}
+.tl.on{color:#fff;border-color:rgba(109,184,255,.3);background:rgba(109,184,255,.06)}
+.tl .ic{font-size:.8rem}
+
+.info{display:flex;gap:6px;align-items:center}
+.info-box{
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04);
+  border-radius:6px;padding:3px 8px;font-size:.5rem;color:rgba(255,255,255,.3);
+  display:flex;align-items:center;gap:3px;
+}
+.info-box .iv{color:#6db8ff;font-family:'JetBrains Mono',monospace;font-weight:600}
+
+.bot{
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(10,18,28,.92);border-top:1px solid rgba(255,255,255,.04);
+  padding:4px 14px;z-index:10;flex-shrink:0;font-size:.52rem;color:rgba(255,255,255,.25)
+}
+.bot-left{display:flex;align-items:center;gap:8px}
+.bot label{display:flex;align-items:center;gap:3px}
+.bot input[type=range]{width:50px;-webkit-appearance:none;height:3px;background:rgba(255,255,255,.08);border-radius:2px;outline:none}
+.bot input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:#6db8ff;cursor:pointer}
+.bbtn{padding:3px 8px;border-radius:4px;border:1px solid rgba(255,255,255,.06);background:none;color:rgba(255,255,255,.3);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.48rem;font-weight:600;transition:all .1s}
+.bbtn:hover{color:#fff;border-color:rgba(255,255,255,.15)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="top-left">
+    <div class="title">🌦️ Weather Painter</div>
+    <div class="tools">
+      <button class="tl on" data-t="heat"><span class="ic">🔥</span>Heat</button>
+      <button class="tl" data-t="cold"><span class="ic">❄️</span>Cold</button>
+      <button class="tl" data-t="moisture"><span class="ic">💧</span>Moisture</button>
+      <button class="tl" data-t="wind"><span class="ic">💨</span>Wind</button>
+      <button class="tl" data-t="mountain"><span class="ic">🏔️</span>Mountain</button>
+      <button class="tl" data-t="ocean"><span class="ic">🌊</span>Ocean</button>
+      <button class="tl" data-t="storm"><span class="ic">⚡</span>Storm</button>
+    </div>
+  </div>
+  <div class="info">
+    <div class="info-box">Clouds <span class="iv" id="iClouds">0</span></div>
+    <div class="info-box">Rain <span class="iv" id="iRain">0</span></div>
+    <div class="info-box">Storms <span class="iv" id="iStorms">0</span></div>
+    <div class="info-box">Avg Temp <span class="iv" id="iTemp">20°</span></div>
+  </div>
+</div>
+
+<canvas id="c"></canvas>
+
+<div class="bot">
+  <div class="bot-left">
+    <label>Brush <input type="range" id="brushSl" min="1" max="8" value="3"> <span id="brushV">3</span></label>
+    <label>Speed <input type="range" id="speedSl" min="1" max="5" value="2"> <span id="speedV">2×</span></label>
+    <label>View <select id="viewMode" style="background:#1a2a3a;border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:4px;font-size:.5rem;padding:2px">
+      <option value="natural">Natural</option>
+      <option value="temp">Temperature</option>
+      <option value="moisture">Moisture</option>
+      <option value="pressure">Pressure</option>
+    </select></label>
+  </div>
+  <div>
+    <button class="bbtn" id="pauseBtn">⏸</button>
+    <button class="bbtn" id="clearBtn">🗑 Clear</button>
+  </div>
+</div>
+
+<script>
+const C=document.getElementById('c'),X=C.getContext('2d');
+let W,H;
+const CELL=5;
+var COLS,ROWS;
+
+function resize(){
+  const tb=document.querySelector('.top').offsetHeight;
+  const bb=document.querySelector('.bot').offsetHeight;
+  W=C.width=innerWidth;H=C.height=innerHeight-tb-bb;
+  COLS=Math.ceil(W/CELL);ROWS=Math.ceil(H/CELL);
+  initGrids();
+}
+
+// ═══════════════ GRIDS ═══════════════
+var temp,moisture,windX,windY,pressure,terrain,clouds,rain;
+var rainDrops=[];
+var lightning=[];
+var tool='heat',brushSize=3,speed=2,viewMode='natural',paused=false;
+var mx=0,my=0,mouseDown=false;
+
+function initGrids(){
+  const N=COLS*ROWS;
+  temp=new Float32Array(N).fill(20);
+  moisture=new Float32Array(N).fill(0);
+  windX=new Float32Array(N);
+  windY=new Float32Array(N);
+  pressure=new Float32Array(N).fill(1);
+  terrain=new Float32Array(N); // 0=flat, >0=mountain, <0=ocean
+  clouds=new Float32Array(N);
+  rain=new Float32Array(N);
+}
+
+function clearAll(){
+  const N=COLS*ROWS;
+  temp.fill(20);moisture.fill(0);windX.fill(0);windY.fill(0);
+  pressure.fill(1);terrain.fill(0);clouds.fill(0);rain.fill(0);
+  rainDrops=[];lightning=[];
+}
+
+resize();addEventListener('resize',resize);
+
+// ═══════════════ WEATHER SIMULATION ═══════════════
+function simulate(){
+  if(paused)return;
+  const N=COLS*ROWS;
+
+  for(let s=0;s<speed;s++){
+    for(let y=1;y<ROWS-1;y++){
+      for(let x=1;x<COLS-1;x++){
+        const i=y*COLS+x;
+        const il=i-1,ir=i+1,iu=i-COLS,id=i+COLS;
+
+        // ─── Temperature diffusion ───
+        const tAvg=(temp[il]+temp[ir]+temp[iu]+temp[id])*0.25;
+        temp[i]+=(tAvg-temp[i])*0.02;
+
+        // Ocean moderates temperature
+        if(terrain[i]<-0.3){
+          temp[i]+=(18-temp[i])*0.01;
+          moisture[i]+=0.003; // evaporation
+        }
+
+        // Mountains are colder at altitude
+        if(terrain[i]>0.3){
+          temp[i]+=(5-temp[i])*0.005;
+        }
+
+        // Temperature decays toward ambient
+        temp[i]+=(20-temp[i])*0.0003;
+
+        // ─── Wind from pressure differences ───
+        const pDx=(pressure[ir]-pressure[il])*0.5;
+        const pDy=(pressure[id]-pressure[iu])*0.5;
+        windX[i]+=-pDx*0.1;
+        windY[i]+=-pDy*0.1;
+
+        // Coriolis-ish effect (slight rotation)
+        const wx=windX[i],wy=windY[i];
+        windX[i]=wx*0.998+wy*0.002;
+        windY[i]=wy*0.998-wx*0.002;
+
+        // Wind drag
+        windX[i]*=0.995;windY[i]*=0.995;
+
+        // ─── Pressure from temperature ───
+        pressure[i]=1+(temp[i]-20)*0.01;
+
+        // ─── Moisture transport by wind ───
+        const srcX=Math.round(x-windX[i]*0.5);
+        const srcY=Math.round(y-windY[i]*0.5);
+        if(srcX>0&&srcX<COLS-1&&srcY>0&&srcY<ROWS-1){
+          const si=srcY*COLS+srcX;
+          moisture[i]+=(moisture[si]-moisture[i])*0.05;
+        }
+
+        // Moisture evaporation from heat
+        if(temp[i]>25){
+          moisture[i]+=Math.max(0,(temp[i]-25)*0.0003);
+        }
+
+        // Moisture decay
+        moisture[i]*=0.999;
+        moisture[i]=Math.max(0,Math.min(1,moisture[i]));
+
+        // ─── Cloud formation ───
+        // Clouds form when moisture is high and temperature drops
+        const dewPoint=temp[i]-((1-moisture[i])*30);
+        if(moisture[i]>0.3&&temp[i]<dewPoint+25){
+          clouds[i]+=(moisture[i]-0.3)*0.03;
+        }
+        // Orographic clouds (mountains force air up → cooling → clouds)
+        if(terrain[i]>0.2&&moisture[i]>0.15){
+          clouds[i]+=terrain[i]*moisture[i]*0.02;
+        }
+        clouds[i]*=0.997;
+        clouds[i]=Math.max(0,Math.min(1,clouds[i]));
+
+        // ─── Rain ───
+        if(clouds[i]>0.5){
+          const rainChance=(clouds[i]-0.5)*0.02;
+          if(Math.random()<rainChance){
+            rain[i]+=0.05;
+            clouds[i]-=0.02;
+            moisture[i]-=0.01;
+            // Spawn rain drop particle
+            if(rainDrops.length<2000&&Math.random()<0.3){
+              rainDrops.push({x:x*CELL+Math.random()*CELL,y:y*CELL,vy:2+Math.random()*3,life:1});
+            }
+          }
+        }
+        rain[i]*=0.98;
+
+        // ─── Storm detection ───
+        if(clouds[i]>0.7&&temp[i]>30&&moisture[i]>0.5){
+          // Thunderstorm conditions
+          if(Math.random()<0.0003){
+            lightning.push({
+              x:x*CELL,y:y*CELL,
+              life:8+Math.random()*6,
+              branches:generateLightning(x*CELL,y*CELL,y*CELL+100+Math.random()*200),
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Update rain drops
+  for(let i=rainDrops.length-1;i>=0;i--){
+    const r=rainDrops[i];
+    r.y+=r.vy*speed;
+    r.x+=windX[gIdx(r.x,r.y)||0]*0.5;
+    r.life-=0.01*speed;
+    if(r.y>H||r.life<=0){
+      // Rain hit ground — cool the surface
+      const gi=gIdx(r.x,r.y);
+      if(gi>=0)temp[gi]-=0.1;
+      rainDrops.splice(i,1);
+    }
+  }
+
+  // Update lightning
+  for(let i=lightning.length-1;i>=0;i--){
+    lightning[i].life-=speed;
+    if(lightning[i].life<=0)lightning.splice(i,1);
+  }
+}
+
+function gIdx(px,py){
+  const c=Math.floor(px/CELL),r=Math.floor(py/CELL);
+  if(c<0||c>=COLS||r<0||r>=ROWS)return-1;
+  return r*COLS+c;
+}
+
+function generateLightning(x,y1,y2){
+  const segs=[];
+  let cx=x,cy=y1;
+  while(cy<y2){
+    const nx=cx+(Math.random()-.5)*30;
+    const ny=cy+5+Math.random()*15;
+    segs.push({x1:cx,y1:cy,x2:nx,y2:ny});
+    // Random branch
+    if(Math.random()<0.3){
+      const bx=nx+(Math.random()-.5)*40;
+      const by=ny+10+Math.random()*20;
+      segs.push({x1:nx,y1:ny,x2:bx,y2:by,branch:true});
+    }
+    cx=nx;cy=ny;
+  }
+  return segs;
+}
+
+// ═══════════════ RENDER ═══════════════
+function render(){
+  // Sky gradient based on average temperature
+  let avgTemp=0,cloudCount=0,rainCount=0,stormCount=0;
+  const N=COLS*ROWS;
+  for(let i=0;i<N;i++){
+    avgTemp+=temp[i];
+    if(clouds[i]>0.3)cloudCount++;
+    if(rain[i]>0.05)rainCount++;
+    if(clouds[i]>0.7&&temp[i]>30)stormCount++;
+  }
+  avgTemp/=N;
+
+  // Sky color from temperature
+  const skyR=Math.floor(30+Math.max(0,avgTemp-20)*3);
+  const skyG=Math.floor(50+Math.max(0,30-Math.abs(avgTemp-20))*2);
+  const skyB=Math.floor(80+Math.max(0,25-avgTemp)*3);
+  X.fillStyle=`rgb(${Math.min(255,skyR)},${Math.min(255,skyG)},${Math.min(255,skyB)})`;
+  X.fillRect(0,0,W,H);
+
+  // Render grid
+  for(let y=0;y<ROWS;y++){
+    for(let x=0;x<COLS;x++){
+      const i=y*COLS+x;
+      const px=x*CELL,py=y*CELL;
+
+      if(viewMode==='natural'){
+        // Terrain
+        if(terrain[i]<-0.3){
+          // Ocean
+          const depth=Math.min(1,Math.abs(terrain[i]));
+          X.fillStyle=`rgba(20,${60+Math.floor(depth*40)},${140+Math.floor(depth*60)},0.8)`;
+          X.fillRect(px,py,CELL,CELL);
+        } else if(terrain[i]>0.3){
+          // Mountain
+          const h=Math.min(1,terrain[i]);
+          const gray=Math.floor(80+h*100);
+          X.fillStyle=h>0.8?`rgb(${200+Math.floor(h*55)},${200+Math.floor(h*55)},${210+Math.floor(h*45)})`:`rgb(${gray-20},${gray},${gray-10})`;
+          X.fillRect(px,py,CELL,CELL);
+        }
+
+        // Heat haze
+        if(temp[i]>35){
+          X.fillStyle=`rgba(255,100,0,${(temp[i]-35)*0.005})`;
+          X.fillRect(px,py,CELL,CELL);
+        }
+        if(temp[i]<5){
+          X.fillStyle=`rgba(150,200,255,${(5-temp[i])*0.008})`;
+          X.fillRect(px,py,CELL,CELL);
+        }
+
+        // Clouds
+        if(clouds[i]>0.1){
+          const ca=Math.min(0.85,clouds[i]);
+          const darkness=clouds[i]>0.6?Math.floor((clouds[i]-0.6)*150):0;
+          X.fillStyle=`rgba(${220-darkness},${225-darkness},${230-darkness*0.5},${ca})`;
+          X.fillRect(px,py,CELL,CELL);
+        }
+      }
+      else if(viewMode==='temp'){
+        const t=temp[i];
+        const cold=Math.max(0,Math.min(1,(20-t)/30));
+        const hot=Math.max(0,Math.min(1,(t-20)/30));
+        X.fillStyle=`rgb(${Math.floor(hot*255)},${Math.floor((1-cold-hot)*100+50)},${Math.floor(cold*255)})`;
+        X.fillRect(px,py,CELL,CELL);
+      }
+      else if(viewMode==='moisture'){
+        const m=moisture[i];
+        X.fillStyle=`rgba(30,100,255,${m})`;
+        X.fillRect(px,py,CELL,CELL);
+      }
+      else if(viewMode==='pressure'){
+        const p=(pressure[i]-0.8)*2.5;
+        const high=Math.max(0,Math.min(1,p));
+        X.fillStyle=`rgb(${Math.floor(high*200)},${Math.floor((1-Math.abs(p-0.5)*2)*150)},${Math.floor((1-high)*200)})`;
+        X.fillRect(px,py,CELL,CELL);
+      }
+    }
+  }
+
+  // Wind visualization (subtle arrows)
+  if(viewMode==='natural'){
+    X.globalAlpha=0.06;X.strokeStyle='#fff';X.lineWidth=0.8;
+    for(let y=2;y<ROWS-2;y+=6){
+      for(let x=2;x<COLS-2;x+=6){
+        const i=y*COLS+x;
+        const wx=windX[i]*8,wy=windY[i]*8;
+        if(Math.abs(wx)+Math.abs(wy)>0.5){
+          const px=x*CELL,py=y*CELL;
+          X.beginPath();X.moveTo(px,py);X.lineTo(px+wx,py+wy);X.stroke();
+        }
+      }
+    }
+    X.globalAlpha=1;
+  }
+
+  // Rain drops
+  X.strokeStyle='rgba(150,200,255,0.35)';X.lineWidth=1;
+  for(const r of rainDrops){
+    X.beginPath();X.moveTo(r.x,r.y);X.lineTo(r.x-0.5,r.y+4);X.stroke();
+  }
+
+  // Lightning
+  for(const l of lightning){
+    const alpha=l.life/14;
+    // Flash
+    if(l.life>10){
+      X.fillStyle=`rgba(255,255,255,${(l.life-10)*0.03})`;
+      X.fillRect(0,0,W,H);
+    }
+    X.strokeStyle=`rgba(200,200,255,${alpha*0.8})`;X.lineWidth=3;X.shadowColor='rgba(150,150,255,0.6)';X.shadowBlur=15;
+    for(const s of l.branches){
+      X.beginPath();X.moveTo(s.x1,s.y1);X.lineTo(s.x2,s.y2);X.stroke();
+    }
+    X.strokeStyle=`rgba(255,255,255,${alpha})`;X.lineWidth=1;
+    for(const s of l.branches){
+      X.beginPath();X.moveTo(s.x1,s.y1);X.lineTo(s.x2,s.y2);X.stroke();
+    }
+    X.shadowBlur=0;
+  }
+
+  // HUD
+  document.getElementById('iClouds').textContent=cloudCount;
+  document.getElementById('iRain').textContent=rainDrops.length;
+  document.getElementById('iStorms').textContent=stormCount;
+  document.getElementById('iTemp').textContent=Math.round(avgTemp)+'°';
+}
+
+// ═══════════════ INPUT ═══════════════
+C.addEventListener('mousedown',e=>{mouseDown=true;mx=e.offsetX;my=e.offsetY;paint()});
+C.addEventListener('mousemove',e=>{mx=e.offsetX;my=e.offsetY;if(mouseDown)paint()});
+C.addEventListener('mouseup',()=>mouseDown=false);
+C.addEventListener('touchstart',e=>{e.preventDefault();mouseDown=true;const t=e.touches[0],r=C.getBoundingClientRect();mx=t.clientX-r.left;my=t.clientY-r.top;paint()},{passive:false});
+C.addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[0],r=C.getBoundingClientRect();mx=t.clientX-r.left;my=t.clientY-r.top;if(mouseDown)paint()},{passive:false});
+C.addEventListener('touchend',()=>mouseDown=false);
+
+function paint(){
+  const cx=Math.floor(mx/CELL),cy=Math.floor(my/CELL);
+  const bs=brushSize;
+  for(let dy=-bs;dy<=bs;dy++){
+    for(let dx=-bs;dx<=bs;dx++){
+      if(dx*dx+dy*dy>bs*bs)continue;
+      const gx=cx+dx,gy=cy+dy;
+      if(gx<1||gx>=COLS-1||gy<1||gy>=ROWS-1)continue;
+      const i=gy*COLS+gx;
+      const falloff=1-Math.sqrt(dx*dx+dy*dy)/bs;
+
+      switch(tool){
+        case 'heat': temp[i]+=3*falloff; break;
+        case 'cold': temp[i]-=3*falloff; break;
+        case 'moisture': moisture[i]=Math.min(1,moisture[i]+0.08*falloff); break;
+        case 'wind':
+          windX[i]+=(mx-W/2)*0.002*falloff;
+          windY[i]+=(my-H/2)*0.002*falloff;
+          break;
+        case 'mountain': terrain[i]=Math.min(1,terrain[i]+0.08*falloff); break;
+        case 'ocean': terrain[i]=Math.max(-1,terrain[i]-0.08*falloff); break;
+        case 'storm':
+          temp[i]+=5*falloff;
+          moisture[i]=Math.min(1,moisture[i]+0.15*falloff);
+          clouds[i]=Math.min(1,clouds[i]+0.1*falloff);
+          break;
+      }
+    }
+  }
+}
+
+// Toolbar
+document.querySelectorAll('.tl').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tl').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');tool=btn.dataset.t;
+  });
+});
+document.getElementById('brushSl').addEventListener('input',function(){brushSize=+this.value;document.getElementById('brushV').textContent=this.value});
+document.getElementById('speedSl').addEventListener('input',function(){speed=+this.value;document.getElementById('speedV').textContent=speed+'×'});
+document.getElementById('viewMode').addEventListener('change',function(){viewMode=this.value});
+document.getElementById('pauseBtn').addEventListener('click',function(){paused=!paused;this.textContent=paused?'▶':'⏸'});
+document.getElementById('clearBtn').addEventListener('click',clearAll);
+
+// ═══════════════ LOOP ═══════════════
+function loop(){simulate();render();requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
