@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brain Wiring</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#060610;overflow:hidden;height:100vh;font-family:'DM Sans',sans-serif;cursor:pointer;margin:0}
+canvas{display:block}
+.hud{position:fixed;top:14px;left:14px;z-index:10;display:flex;flex-direction:column;gap:4px}
+.hud-row{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.04);border-radius:8px;padding:5px 12px;font-size:.55rem;color:rgba(255,255,255,.25);font-weight:600}
+.hud-row .val{color:rgba(100,200,255,.7);font-family:'JetBrains Mono',monospace}
+.toolbar{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:3px;z-index:10;background:rgba(0,0,0,.5);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.04);border-radius:14px;padding:4px}
+.tb{padding:6px 14px;border-radius:10px;border:1px solid transparent;background:none;color:rgba(255,255,255,.3);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.55rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;transition:all .1s;display:flex;align-items:center;gap:4px}
+.tb:hover{color:#fff;background:rgba(255,255,255,.04)}
+.tb.on{color:rgba(100,200,255,.8);border-color:rgba(100,200,255,.15);background:rgba(100,200,255,.05)}
+.hint{position:fixed;top:14px;right:14px;z-index:10;font-size:.5rem;color:rgba(255,255,255,.15);background:rgba(0,0,0,.3);padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.04)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="hud-row">Neurons: <span class="val" id="hNeurons">60</span></div>
+  <div class="hud-row">Synapses: <span class="val" id="hSynapses">0</span></div>
+  <div class="hud-row">Firings: <span class="val" id="hFirings">0</span></div>
+  <div class="hud-row">Activity: <span class="val" id="hActivity">0%</span></div>
+</div>
+<div class="hint">Click neurons to fire them</div>
+<div class="toolbar">
+  <button class="tb on" data-mode="click"><span>🧠</span>Fire</button>
+  <button class="tb" data-mode="chain"><span>⚡</span>Chain</button>
+  <button class="tb" data-mode="wave"><span>🌊</span>Wave</button>
+  <button class="tb" data-mode="add"><span>➕</span>Add</button>
+  <button class="tb" data-mode="reset"><span>↻</span>Reset</button>
+</div>
+
+<script>
+const C=document.getElementById('c'),X=C.getContext('2d');
+let W=innerWidth,H=innerHeight;
+
+// ═══ DECLARE ALL STATE BEFORE ANYTHING ELSE ═══
+var neurons=[];
+var synapses=[];
+var signals=[];
+var mode='click';
+var totalFirings=0;
+var mx=W/2,my=H/2;
+
+function resize(){
+  W=C.width=innerWidth;
+  H=C.height=innerHeight;
+}
+resize();
+addEventListener('resize',resize);
+
+class Neuron{
+  constructor(x,y){
+    this.x=x;this.y=y;
+    this.r=4+Math.random()*3;
+    this.charge=0;
+    this.threshold=0.6+Math.random()*0.3;
+    this.firing=false;
+    this.fireTimer=0;
+    this.cooldown=0;
+    this.connections=[];
+    this.pulsePhase=Math.random()*Math.PI*2;
+    this.hue=180+Math.random()*40;
+    this.dendrites=[];
+    this.autoFireRate=0.0003+Math.random()*0.0005;
+  }
+}
+
+function makeDendrites(x,y){
+  const dends=[];
+  const num=2+Math.floor(Math.random()*3);
+  for(let d=0;d<num;d++){
+    const angle=Math.random()*Math.PI*2;
+    const branches=[];
+    let bx=x,by=y,ba=angle;
+    const segs=3+Math.floor(Math.random()*3);
+    for(let s=0;s<segs;s++){
+      ba+=(Math.random()-.5)*.8;
+      const sl=(15+Math.random()*25)/segs*(0.5+Math.random()*0.5);
+      const ex=bx+Math.cos(ba)*sl,ey=by+Math.sin(ba)*sl;
+      branches.push({x1:bx,y1:by,x2:ex,y2:ey});
+      bx=ex;by=ey;
+    }
+    dends.push(branches);
+  }
+  return dends;
+}
+
+function buildNetwork(){
+  neurons=[];synapses=[];signals=[];totalFirings=0;
+  const NUM=60,pad=60;
+
+  // Clusters
+  const clusters=[];
+  for(let c=0;c<4+Math.floor(Math.random()*3);c++){
+    clusters.push({x:pad+Math.random()*(W-pad*2),y:pad+Math.random()*(H-pad*2)});
+  }
+
+  for(let i=0;i<NUM;i++){
+    const cl=clusters[Math.floor(Math.random()*clusters.length)];
+    const spread=80+Math.random()*120;
+    let x=cl.x+(Math.random()-.5)*spread*2;
+    let y=cl.y+(Math.random()-.5)*spread*2;
+    x=Math.max(pad,Math.min(W-pad,x));
+    y=Math.max(pad,Math.min(H-pad,y));
+
+    let tooClose=false;
+    for(const n of neurons){if(Math.hypot(n.x-x,n.y-y)<25){tooClose=true;break}}
+    if(tooClose){i--;continue}
+
+    const neuron=new Neuron(x,y);
+    neuron.dendrites=makeDendrites(x,y);
+    neurons.push(neuron);
+  }
+
+  // Synapses
+  for(let i=0;i<neurons.length;i++){
+    const a=neurons[i];
+    const dists=neurons.map((b,j)=>({j,d:Math.hypot(a.x-b.x,a.y-b.y)}))
+      .filter(x=>x.j!==i).sort((x,y)=>x.d-y.d);
+    const numConn=2+Math.floor(Math.random()*4);
+    for(let c=0;c<Math.min(numConn,dists.length);c++){
+      const j=dists[c].j;
+      if(dists[c].d>250)continue;
+      const exists=synapses.some(s=>(s.a===i&&s.b===j)||(s.a===j&&s.b===i));
+      if(!exists){
+        synapses.push({a:i,b:j,strength:0.3+Math.random()*0.5});
+        neurons[i].connections.push(j);
+        neurons[j].connections.push(i);
+      }
+    }
+  }
+  updateHUD();
+}
+
+function fireNeuron(idx){
+  if(idx<0||idx>=neurons.length)return;
+  const n=neurons[idx];
+  if(n.cooldown>0)return;
+  n.firing=true;n.fireTimer=20;n.cooldown=40;n.charge=0;
+  totalFirings++;
+  for(const s of synapses){
+    if(s.a===idx||s.b===idx){
+      const target=s.a===idx?s.b:s.a;
+      signals.push({from:idx,to:target,synapse:s,progress:0,speed:0.025+Math.random()*0.015,strength:s.strength});
+    }
+  }
+}
+
+function update(){
+  for(let i=0;i<neurons.length;i++){
+    const n=neurons[i];
+    n.charge*=0.995;
+    if(n.cooldown>0)n.cooldown--;
+    if(n.firing){n.fireTimer--;if(n.fireTimer<=0)n.firing=false}
+    if(!n.firing&&n.cooldown===0&&Math.random()<n.autoFireRate)n.charge+=0.3;
+    if(n.charge>=n.threshold&&!n.firing&&n.cooldown===0)fireNeuron(i);
+  }
+  for(let i=signals.length-1;i>=0;i--){
+    const s=signals[i];
+    s.progress+=s.speed;
+    if(s.progress>=1){
+      const target=neurons[s.to];
+      if(target&&target.cooldown===0)target.charge+=s.strength*0.4;
+      signals.splice(i,1);
+    }
+  }
+  updateHUD();
+}
+
+function updateHUD(){
+  document.getElementById('hNeurons').textContent=neurons.length;
+  document.getElementById('hSynapses').textContent=synapses.length;
+  document.getElementById('hFirings').textContent=totalFirings;
+  const active=neurons.filter(n=>n.firing||n.charge>0.3).length;
+  document.getElementById('hActivity').textContent=Math.round(active/Math.max(1,neurons.length)*100)+'%';
+}
+
+function render(){
+  const t=performance.now()*0.001;
+  X.fillStyle='rgba(6,6,16,0.12)';X.fillRect(0,0,W,H);
+
+  // Dendrites
+  X.lineWidth=0.5;
+  for(const n of neurons){
+    X.strokeStyle=`hsla(${n.hue},60%,50%,${n.firing?0.15:0.03})`;
+    for(const dend of n.dendrites){
+      for(const seg of dend){X.beginPath();X.moveTo(seg.x1,seg.y1);X.lineTo(seg.x2,seg.y2);X.stroke()}
+    }
+  }
+
+  // Synapses
+  for(const s of synapses){
+    const a=neurons[s.a],b=neurons[s.b];
+    const hasSignal=signals.some(sig=>sig.synapse===s);
+    X.beginPath();X.moveTo(a.x,a.y);X.lineTo(b.x,b.y);
+    if(hasSignal){
+      X.strokeStyle='hsla(200,80%,60%,0.12)';X.lineWidth=1.5;
+      X.shadowColor='hsla(200,80%,60%,0.2)';X.shadowBlur=6;
+    } else {
+      X.strokeStyle='rgba(100,150,200,0.025)';X.lineWidth=0.5;X.shadowBlur=0;
+    }
+    X.stroke();X.shadowBlur=0;
+  }
+
+  // Signals
+  for(const s of signals){
+    const a=neurons[s.from],b=neurons[s.to];
+    const px=a.x+(b.x-a.x)*s.progress,py=a.y+(b.y-a.y)*s.progress;
+    X.beginPath();X.arc(px,py,3,0,Math.PI*2);
+    X.fillStyle='hsla(200,90%,70%,0.15)';X.shadowColor='hsla(200,90%,70%,0.4)';X.shadowBlur=12;X.fill();
+    X.beginPath();X.arc(px,py,1.5,0,Math.PI*2);
+    X.fillStyle='hsla(200,90%,80%,0.7)';X.fill();X.shadowBlur=0;
+  }
+
+  // Neurons
+  for(let i=0;i<neurons.length;i++){
+    const n=neurons[i];
+    const pulse=Math.sin(t*2+n.pulsePhase)*0.15+0.85;
+    const isHover=Math.hypot(n.x-mx,n.y-my)<20;
+
+    if(n.firing){
+      const fa=(n.fireTimer/20)*0.4;
+      const fr=n.r*4*(1-n.fireTimer/20);
+      X.beginPath();X.arc(n.x,n.y,fr,0,Math.PI*2);
+      X.fillStyle=`hsla(${n.hue},90%,70%,${fa*0.15})`;X.fill();
+      X.beginPath();X.arc(n.x,n.y,n.r*1.5,0,Math.PI*2);
+      X.fillStyle=`hsla(${n.hue},90%,80%,${0.5+fa})`;
+      X.shadowColor=`hsla(${n.hue},90%,70%,0.6)`;X.shadowBlur=20;X.fill();X.shadowBlur=0;
+    } else {
+      const cg=n.charge*0.5;
+      if(cg>0.05){X.beginPath();X.arc(n.x,n.y,n.r+6,0,Math.PI*2);X.fillStyle=`hsla(${n.hue},70%,50%,${cg*0.15})`;X.fill()}
+      X.beginPath();X.arc(n.x,n.y,n.r*pulse*(isHover?1.3:1),0,Math.PI*2);
+      X.fillStyle=`hsla(${n.hue},60%,${40+cg*30}%,${0.15+cg*0.5+(isHover?0.15:0)})`;
+      if(cg>0.2||isHover){X.shadowColor=`hsla(${n.hue},70%,60%,${cg*0.3})`;X.shadowBlur=8}
+      X.fill();X.shadowBlur=0;
+      X.beginPath();X.arc(n.x,n.y,n.r*0.35,0,Math.PI*2);
+      X.fillStyle=`hsla(${n.hue},60%,60%,${0.2+cg*0.4})`;X.fill();
+    }
+  }
+}
+
+// ═══ INPUT ═══
+C.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
+C.addEventListener('click',e=>{
+  mx=e.clientX;my=e.clientY;
+
+  if(mode==='add'){
+    const n=new Neuron(mx,my);
+    n.dendrites=makeDendrites(mx,my);
+    neurons.push(n);
+    const ni=neurons.length-1;
+    neurons.forEach((other,j)=>{
+      if(j===ni)return;
+      if(Math.hypot(other.x-mx,other.y-my)<150&&Math.random()<0.6){
+        synapses.push({a:ni,b:j,strength:0.3+Math.random()*0.4});
+        neurons[ni].connections.push(j);
+        neurons[j].connections.push(ni);
+      }
+    });
+    return;
+  }
+  if(mode==='reset'){buildNetwork();return}
+
+  let closest=-1,closestD=30;
+  neurons.forEach((n,i)=>{const d=Math.hypot(n.x-mx,n.y-my);if(d<closestD){closestD=d;closest=i}});
+
+  if(mode==='click'&&closest>=0){fireNeuron(closest)}
+  else if(mode==='chain'&&closest>=0){
+    fireNeuron(closest);
+    const conns=[...neurons[closest].connections];
+    conns.forEach((ci,delay)=>{setTimeout(()=>fireNeuron(ci),(delay+1)*80)});
+  }
+  else if(mode==='wave'){
+    neurons.forEach((n,i)=>{const d=Math.hypot(n.x-mx,n.y-my);setTimeout(()=>fireNeuron(i),d*3)});
+  }
+});
+
+C.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  const t=e.touches[0];
+  mx=t.clientX;my=t.clientY;
+  C.dispatchEvent(new MouseEvent('click',{clientX:t.clientX,clientY:t.clientY}));
+},{passive:false});
+
+document.querySelectorAll('.tb').forEach(btn=>{
+  btn.addEventListener('click',e=>{
+    e.stopPropagation();
+    const m=btn.dataset.mode;
+    if(m==='reset'){buildNetwork();return}
+    document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    mode=m;
+  });
+});
+
+// ═══ INIT & LOOP ═══
+buildNetwork();
+
+function loop(){
+  update();render();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
